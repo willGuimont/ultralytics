@@ -15,7 +15,7 @@ from torch.utils.data import ConcatDataset
 
 from ultralytics.utils import LOCAL_RANK, LOGGER, NUM_THREADS, TQDM, colorstr
 from ultralytics.utils.instance import Instances
-from ultralytics.utils.ops import resample_segments, segments2boxes
+from ultralytics.utils.ops import resample_segments, segments2boxes, resample_segment
 from ultralytics.utils.torch_utils import TORCHVISION_0_18
 
 from .augment import (
@@ -37,7 +37,7 @@ from .utils import (
     load_dataset_cache_file,
     save_dataset_cache_file,
     verify_image,
-    verify_image_label,
+    verify_image_label, img2shape_paths,
 )
 
 # Ultralytics dataset *.cache version, >= 1.0.0 for Ultralytics YOLO models
@@ -119,10 +119,11 @@ class YOLODataset(BaseDataset):
                     repeat(nkpt),
                     repeat(ndim),
                     repeat(self.single_cls),
+                    self.shapes_files
                 ),
             )
             pbar = TQDM(results, desc=desc, total=total)
-            for im_file, lb, shape, segments, keypoint, nm_f, nf_f, ne_f, nc_f, msg in pbar:
+            for im_file, lb, shape, segments, keypoint, nm_f, nf_f, ne_f, nc_f, msg, shapes in pbar:
                 nm += nm_f
                 nf += nf_f
                 ne += ne_f
@@ -138,6 +139,7 @@ class YOLODataset(BaseDataset):
                             "keypoints": keypoint,
                             "normalized": True,
                             "bbox_format": "xywh",
+                            "shapes": shapes,
                         }
                     )
                 if msg:
@@ -165,6 +167,7 @@ class YOLODataset(BaseDataset):
             (List[dict]): List of label dictionaries, each containing information about an image and its annotations.
         """
         self.label_files = img2label_paths(self.im_files)
+        self.shapes_files = img2shape_paths(self.im_files)
         cache_path = Path(self.label_files[0]).parent.with_suffix(".cache")
         try:
             cache, exists = load_dataset_cache_file(cache_path), True  # attempt to load a *.cache file
@@ -277,7 +280,33 @@ class YOLODataset(BaseDataset):
             max_len = max(len(s) for s in segments)
             segment_resamples = (max_len + 1) if segment_resamples < max_len else segment_resamples
             # list[np.array(segment_resamples, 2)] * num_samples
-            segments = np.stack(resample_segments(segments, n=segment_resamples), axis=0)
+            shapes = label["shapes"]
+            if all(len(s) == 1 for s in shapes):
+                segments = np.stack(resample_segments(segments, n=segment_resamples), axis=0)
+            else:
+                resampled_segments = []
+                new_shapes = []
+                for i in range(len(segments)):
+                    s = segments[i]
+                    shape = shapes[i]
+                    n = len(shape)
+                    if n == 1:
+                        resampled_segments.append(resample_segment(s, n=segment_resamples))
+                        new_shapes.append([segment_resamples])
+                    else:
+                        size_upsample = segment_resamples // n
+                        sizes_upsample = (n - 1) * [size_upsample] + [segment_resamples - size_upsample * (n - 1)]
+                        new_shapes.append(sizes_upsample)
+                        start = 0
+                        samples = []
+                        for j, _shape in enumerate(shape):
+                            end = start + _shape
+                            ss = s[start:end]
+                            samples.append(resample_segment(ss, sizes_upsample[j]))
+                            start = end
+                        resampled_segments.append(np.concatenate(samples))
+                label["new_shapes"] = new_shapes
+                segments = np.stack(resampled_segments, axis=0)
         else:
             segments = np.zeros((0, segment_resamples, 2), dtype=np.float32)
         label["instances"] = Instances(bboxes, segments, keypoints, bbox_format=bbox_format, normalized=normalized)

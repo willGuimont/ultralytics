@@ -11,7 +11,7 @@ import torch
 from PIL import Image
 from torch.nn import functional as F
 
-from ultralytics.data.utils import polygons2masks, polygons2masks_overlap
+from ultralytics.data.utils import polygons2masks, polygons2masks_overlap, polygons2mask_shapes
 from ultralytics.utils import LOGGER, IterableSimpleNamespace, colorstr
 from ultralytics.utils.checks import check_version
 from ultralytics.utils.instance import Instances
@@ -2192,7 +2192,7 @@ class Format:
 
         if self.return_mask:
             if nl:
-                masks, instances, cls = self._format_segments(instances, cls, w, h)
+                masks, instances, cls = self._format_segments(instances, cls, w, h, labels)
                 masks = torch.from_numpy(masks)
             else:
                 masks = torch.zeros(
@@ -2254,7 +2254,7 @@ class Format:
         return img
 
     def _format_segments(
-        self, instances: Instances, cls: np.ndarray, w: int, h: int
+        self, instances: Instances, cls: np.ndarray, w: int, h: int, labels: dict[str, Any]
     ) -> Tuple[np.ndarray, Instances, np.ndarray]:
         """
         Convert polygon segments to bitmap masks.
@@ -2275,9 +2275,15 @@ class Format:
             - If self.mask_overlap is False, each mask is represented separately.
             - Masks are downsampled according to self.mask_ratio.
         """
+        shapes = labels.pop("shapes")
+        new_shapes = labels.pop("new_shapes", None)
+
         segments = instances.segments
         if self.mask_overlap:
-            masks, sorted_idx = polygons2masks_overlap((h, w), segments, downsample_ratio=self.mask_ratio)
+            if new_shapes is None:
+                masks, sorted_idx = polygons2masks_overlap((h, w), segments, downsample_ratio=self.mask_ratio)
+            else:
+                masks, sorted_idx = polygons2mask_shapes((h, w), segments, all_shapes=new_shapes, downsample_ratio=self.mask_ratio)
             masks = masks[None]  # (640, 640) -> (1, 640, 640)
             instances = instances[sorted_idx]
             cls = cls[sorted_idx]

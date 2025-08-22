@@ -328,6 +328,7 @@ def convert_coco(
                         )
 
             # Write
+            f.r
             with open((fn / f).with_suffix(".txt"), "a", encoding="utf-8") as file:
                 for i in range(len(bboxes)):
                     if use_keypoints:

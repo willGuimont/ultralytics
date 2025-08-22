@@ -47,8 +47,14 @@ def img2label_paths(img_paths: List[str]) -> List[str]:
     return [sb.join(x.rsplit(sa, 1)).rsplit(".", 1)[0] + ".txt" for x in img_paths]
 
 
+def img2shape_paths(img_paths: List[str]) -> List[str]:
+    """Convert image paths to label paths by replacing 'images' with 'labels' and extension with '.txt'."""
+    sa, sb = f"{os.sep}images{os.sep}", f"{os.sep}labels{os.sep}"  # /images/, /labels/ substrings
+    return [sb.join(x.rsplit(sa, 1)).rsplit(".", 1)[0] + ".shapes" for x in img_paths]
+
+
 def check_file_speeds(
-    files: List[str], threshold_ms: float = 10, threshold_mb: float = 50, max_files: int = 5, prefix: str = ""
+        files: List[str], threshold_ms: float = 10, threshold_mb: float = 50, max_files: int = 5, prefix: str = ""
 ):
     """
     Check dataset file access speed and provide performance feedback.
@@ -179,7 +185,7 @@ def verify_image(args: Tuple) -> Tuple:
 
 def verify_image_label(args: Tuple) -> List:
     """Verify one image-label pair."""
-    im_file, lb_file, prefix, keypoint, num_cls, nkpt, ndim, single_cls = args
+    im_file, lb_file, prefix, keypoint, num_cls, nkpt, ndim, single_cls, shapes_file = args
     # Number (missing, found, empty, corrupt), message, segments, keypoints
     nm, nf, ne, nc, msg, segments, keypoints = 0, 0, 0, 0, "", [], None
     try:
@@ -241,12 +247,19 @@ def verify_image_label(args: Tuple) -> List:
             if ndim == 2:
                 kpt_mask = np.where((keypoints[..., 0] < 0) | (keypoints[..., 1] < 0), 0.0, 1.0).astype(np.float32)
                 keypoints = np.concatenate([keypoints, kpt_mask[..., None]], axis=-1)  # (nl, nkpt, 3)
+        if os.path.isfile(shapes_file):
+            with open(shapes_file, encoding="utf-8") as f:
+                shapes_txt = [x.split() for x in f.read().strip().splitlines() if len(x)]
+                shapes = list(map(lambda x: list(map(int, x)), shapes_txt))
+                assert len(shapes) == len(segments), "Missing some shapes!"
+        else:
+            assert False, "Missing shapes file!"
         lb = lb[:, :5]
-        return im_file, lb, shape, segments, keypoints, nm, nf, ne, nc, msg
+        return im_file, lb, shape, segments, keypoints, nm, nf, ne, nc, msg, shapes
     except Exception as e:
         nc = 1
         msg = f"{prefix}{im_file}: ignoring corrupt image/label: {e}"
-        return [None, None, None, None, None, nm, nf, ne, nc, msg]
+        return [None, None, None, None, None, nm, nf, ne, nc, msg, None]
 
 
 def visualize_image_annotations(image_path: str, txt_path: str, label_map: Dict[int, str]):
@@ -294,7 +307,7 @@ def visualize_image_annotations(image_path: str, txt_path: str, label_map: Dict[
 
 
 def polygon2mask(
-    imgsz: Tuple[int, int], polygons: List[np.ndarray], color: int = 1, downsample_ratio: int = 1
+        imgsz: Tuple[int, int], polygons: List[np.ndarray], color: int = 1, downsample_ratio: int = 1
 ) -> np.ndarray:
     """
     Convert a list of polygons to a binary mask of the specified image size.
@@ -319,7 +332,7 @@ def polygon2mask(
 
 
 def polygons2masks(
-    imgsz: Tuple[int, int], polygons: List[np.ndarray], color: int, downsample_ratio: int = 1
+        imgsz: Tuple[int, int], polygons: List[np.ndarray], color: int, downsample_ratio: int = 1
 ) -> np.ndarray:
     """
     Convert a list of polygons to a set of binary masks of the specified image size.
@@ -338,7 +351,7 @@ def polygons2masks(
 
 
 def polygons2masks_overlap(
-    imgsz: Tuple[int, int], segments: List[np.ndarray], downsample_ratio: int = 1
+        imgsz: Tuple[int, int], segments: List[np.ndarray], downsample_ratio: int = 1
 ) -> Tuple[np.ndarray, np.ndarray]:
     """Return a (640, 640) overlap mask."""
     masks = np.zeros(
@@ -359,6 +372,48 @@ def polygons2masks_overlap(
         masks = masks + mask
         masks = np.clip(masks, a_min=0, a_max=i + 1)
     return masks, index
+
+
+def fill_contours(imgsz: Tuple[int, int], polygons: List[np.ndarray], color: int = 1, downsample_ratio: int = 1):
+    ...
+
+
+def polygons2mask_shapes(imgsz: Tuple[int, int], segments: List[np.ndarray], all_shapes, downsample_ratio: int = 1):
+    masks = np.zeros(
+        (imgsz[0] // downsample_ratio, imgsz[1] // downsample_ratio),
+        dtype=np.int32 if len(segments) > 255 else np.uint8,
+    )
+    masks = np.zeros(
+        (imgsz[0] // downsample_ratio, imgsz[1] // downsample_ratio),
+        dtype=np.int32 if len(segments) > 255 else np.uint8,
+    )
+    areas = []
+    ms = []
+    for si in range(len(segments)):
+        segment = segments[si]
+        shapes = all_shapes[si]
+        if len(shapes) == 1:
+            mask = polygon2mask(imgsz, [segment.reshape(-1)], downsample_ratio=downsample_ratio, color=1)
+        else:
+            start = 0
+            mask = np.zeros_like(masks)
+            for length in shapes:
+                end = start + length
+                sub_segment = segment[start:end]
+                start = end
+                new_mask = polygon2mask(imgsz, [sub_segment.reshape(-1)], downsample_ratio=downsample_ratio, color=1)
+                mask = np.maximum(mask, new_mask)
+        ms.append(mask.astype(masks.dtype))
+        areas.append(mask.sum())
+    areas = np.asarray(areas)
+    index = np.argsort(-areas)
+    ms = np.array(ms)[index]
+    for i in range(len(segments)):
+        mask = ms[i] * (i + 1)
+        masks = masks + mask
+        masks = np.clip(masks, a_min=0, a_max=i + 1)
+    return masks, index
+
 
 
 def find_dataset_yaml(path: Path) -> Path:

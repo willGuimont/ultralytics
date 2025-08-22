@@ -190,22 +190,22 @@ def nms_rotated(boxes, scores, threshold: float = 0.45, use_triu: bool = True):
 
 
 def non_max_suppression(
-    prediction,
-    conf_thres: float = 0.25,
-    iou_thres: float = 0.45,
-    classes=None,
-    agnostic: bool = False,
-    multi_label: bool = False,
-    labels=(),
-    max_det: int = 300,
-    nc: int = 0,  # number of classes (optional)
-    max_time_img: float = 0.05,
-    max_nms: int = 30000,
-    max_wh: int = 7680,
-    in_place: bool = True,
-    rotated: bool = False,
-    end2end: bool = False,
-    return_idxs: bool = False,
+        prediction,
+        conf_thres: float = 0.25,
+        iou_thres: float = 0.45,
+        classes=None,
+        agnostic: bool = False,
+        multi_label: bool = False,
+        labels=(),
+        max_det: int = 300,
+        nc: int = 0,  # number of classes (optional)
+        max_time_img: float = 0.05,
+        max_nms: int = 30000,
+        max_wh: int = 7680,
+        in_place: bool = True,
+        rotated: bool = False,
+        end2end: bool = False,
+        return_idxs: bool = False,
 ):
     """
     Perform non-maximum suppression (NMS) on prediction results.
@@ -600,7 +600,7 @@ def xywhr2xyxyxyxy(x):
     )
 
     ctr = x[..., :2]
-    w, h, angle = (x[..., i : i + 1] for i in range(2, 5))
+    w, h, angle = (x[..., i: i + 1] for i in range(2, 5))
     cos_value, sin_value = cos(angle), sin(angle)
     vec1 = [w / 2 * cos_value, w / 2 * sin_value]
     vec2 = [-h / 2 * sin_value, h / 2 * cos_value]
@@ -644,6 +644,18 @@ def segments2boxes(segments):
         x, y = s.T  # segment xy
         boxes.append([x.min(), y.min(), x.max(), y.max()])  # cls, xyxy
     return xyxy2xywh(np.array(boxes))  # cls, xywh
+
+
+def resample_segment(s, n: int = 1000):
+    if len(s) == n:
+        return s
+    s = np.concatenate((s, s[0:1, :]), axis=0)
+    x = np.linspace(0, len(s) - 1, n - len(s) if len(s) < n else n)
+    xp = np.arange(len(s))
+    x = np.insert(x, np.searchsorted(x, xp), xp) if len(s) < n else x
+    return (
+        np.concatenate([np.interp(x, xp, s[:, i]) for i in range(2)], dtype=np.float32).reshape(2, -1).T
+    )  # segment xy
 
 
 def resample_segments(segments, n: int = 1000):
