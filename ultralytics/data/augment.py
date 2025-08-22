@@ -2275,7 +2275,7 @@ class Format:
             - If self.mask_overlap is False, each mask is represented separately.
             - Masks are downsampled according to self.mask_ratio.
         """
-        shapes = labels.pop("shapes")
+        # shapes = labels.pop("shapes")
         new_shapes = labels.pop("new_shapes", None)
 
         segments = instances.segments

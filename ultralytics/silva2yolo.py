@@ -10,10 +10,10 @@ import yaml
 from PIL import Image
 from pycocotools import mask as maskUtils
 
-from ultralytics.utils.plotting import colors
 from ultralytics.data.utils import polygon2mask
 from ultralytics.utils import LOGGER
 from ultralytics.utils import TQDM
+from ultralytics.utils.plotting import colors
 
 
 def ann_to_contours(ann, orig_w: int, orig_h: int):
@@ -72,6 +72,7 @@ def convert_coco(
     # Create dataset directory
     save_dir = Path(save_dir)
     for p in save_dir / "labels", save_dir / "images":
+        shutil.rmtree(p)
         p.mkdir(parents=True, exist_ok=True)  # make dir
 
     # Import json
@@ -96,7 +97,8 @@ def convert_coco(
             # NOTE: images appear downscaled by 8 (existing code divides by 8). Preserve behavior.
             orig_h, orig_w = img["height"], img["width"]
             h, w = orig_h / 8, orig_w / 8
-            f_rel = str(Path(img["coco_url"]).relative_to("http://images.cocodataset.org")) if lvis else img["file_name"]
+            f_rel = str(Path(img["coco_url"]).relative_to("http://images.cocodataset.org")) if lvis else img[
+                "file_name"]
             if lvis:
                 image_txt.append(str(Path("./images") / f_rel))
 
@@ -148,7 +150,8 @@ def convert_coco(
                     box[[0, 2]] /= w
                     box[[1, 3]] /= h
                     if box[2] > 0 and box[3] > 0:
-                        bboxes.append([cls] + box.tolist()[1:])  # exclude cls duplication pattern; keep cls + normalized box
+                        bboxes.append(
+                            [cls] + box.tolist()[1:])  # exclude cls duplication pattern; keep cls + normalized box
                         if use_segments:
                             segments.append([])  # placeholder to align indices
 
@@ -173,7 +176,8 @@ def convert_coco(
                     if use_keypoints:
                         line = (*(keypoints[i]),) if i < len(keypoints) else (*(bboxes[i],),)
                     else:
-                        chosen = segments[i] if use_segments and i < len(segments) and len(segments[i]) > 0 else bboxes[i]
+                        chosen = segments[i] if use_segments and i < len(segments) and len(segments[i]) > 0 else bboxes[
+                            i]
                         line = (*chosen,)
                     file.write(("%g " * len(line)).rstrip() % line + "\n")
             with open((fn / img_path.name).with_suffix(".shapes"), "w", encoding="utf-8") as file:
@@ -210,7 +214,6 @@ def parse_yolov8_seg_txt(label_path):
     return class_ids, segments_norm
 
 
-
 def gen_yaml(path, outpath):
     with open(path, 'r') as f:
         data = json.load(f)
@@ -225,6 +228,7 @@ def gen_yaml(path, outpath):
     with open(outpath, 'w') as f:
         yaml.dump(output, f)
         print(f'Written to {outpath}')
+
 
 def viz_masks(image_path, txt_path, id2label):
     img = np.array(Image.open(image_path))
@@ -250,15 +254,65 @@ def viz_masks(image_path, txt_path, id2label):
     plt.show()
 
 
+def gen_kfold_yaml(json_path, out_path, kfold_name):
+    with open(json_path, 'r') as f:
+        data = json.load(f)
+    cats = data['categories']
+    output = dict(
+        path='vhr-silva',
+        train=f'images/{kfold_name}_train',
+        val=f'images/{kfold_name}_val',
+        test=f'images/{kfold_name}_test',
+        names=dict({c['id']: c['name'] for c in cats})
+    )
+    with open(out_path, 'w') as f:
+        yaml.dump(output, f)
+
+
+def prepare_k_folds(root):
+    root = Path(root)
+    image_folder = root / 'images'
+    label_folder = root / 'labels'
+    splits = [f.stem for f in label_folder.iterdir() if f.is_dir()]
+    n_splits = len(splits)
+    split_indices = set(range(n_splits))
+    # TODO one yaml per fold
+    # TODO one labels and images folder for kfold_1_train, kfold_1_val, kfold_1_test
+    for k_fold_idx, test_idx in enumerate(range(len(split_indices))):
+        val_idx = (test_idx + 1) % n_splits
+        test_split = [splits[test_idx]]
+        val_split = [splits[val_idx]]
+        train_splits = [splits[si] for si in split_indices - {test_idx, val_idx}]
+
+        kfold_name = f"kfold_{k_fold_idx + 1}"
+        gen_kfold_yaml(root / "subsets" / "forests" / "split_1.json", (root / kfold_name).with_suffix('.yaml'), kfold_name)
+
+        kfold_splits = dict(train=train_splits, val=val_split, test=test_split)
+        for mode, splits_in_kfold in kfold_splits.items():
+            kfold_image_path = image_folder / f"{kfold_name}_{mode}"
+            kfold_label_path = label_folder / f"{kfold_name}_{mode}"
+
+            for p in kfold_image_path, kfold_label_path:
+                shutil.rmtree(p, ignore_errors=True)
+                p.mkdir(parents=True, exist_ok=True)
+
+            for split_name in splits_in_kfold:
+                for path in [f for f in (image_folder / split_name).iterdir() if f.is_file()]:
+                    shutil.copy(path, kfold_image_path)
+                for path in [f for f in (label_folder / split_name).iterdir() if f.is_file()]:
+                    shutil.copy(path, kfold_label_path)
+
+
 if __name__ == '__main__':
     convert_coco(
         '/home/william/Documents/datasets/vhr-silva/subsets/forests',
         '/home/william/Documents/datasets/vhr-silva/',
         use_segments=True,
     )
-    gen_yaml('/home/william/Documents/datasets/vhr-silva/subsets/forests/split_1.json',
-             '/home/william/Documents/datasets/vhr-silva/silva.yaml')
-    viz_masks(
-        '/home/william/Documents/datasets/vhr-silva/data/tif-8/forests/DCIM/158_FUJI/DSCF8962.tif',
-        '/home/william/Documents/datasets/vhr-silva/labels/split_1/DSCF8962.txt',
-        {i: str(i) for i in range(3)})
+    # gen_yaml('/home/william/Documents/datasets/vhr-silva/subsets/forests/split_1.json',
+    #          '/home/william/Documents/datasets/vhr-silva/silva.yaml')
+    # viz_masks(
+    #     '/home/william/Documents/datasets/vhr-silva/data/tif-8/forests/DCIM/158_FUJI/DSCF8962.tif',
+    #     '/home/william/Documents/datasets/vhr-silva/labels/split_1/DSCF8962.txt',
+    #     {i: str(i) for i in range(3)})
+    prepare_k_folds('/home/william/Documents/datasets/vhr-silva/')
