@@ -14,8 +14,8 @@
 
 # Prepare tmp directory
 cd "$SLURM_TMPDIR" || exit 1
-cp -r "$HOME"/vhr-mask2former/ ./
-cp -r "$HOME"/projects/def-phgig4/silva_vhr/vhr_mask2former.sif ./
+cp -r "$HOME"/ultralytics/ ./
+cp -r "$HOME"/projects/def-phgig4/silva_vhr/yolo.sif ./
 cp -r "$HOME"/projects/def-phgig4/silva_vhr/vhr-silva.zip ./
 cp -r "$HOME"/projects/def-phgig4/silva_vhr/hg ./hg || mkdir hg
 
@@ -26,10 +26,9 @@ unzip -q vhr-silva.zip
 module load apptainer
 module load httpproxy
 
-cd vhr-mask2former || exit 1
+cd ultralytics || exit 1
 export WANDB_MODE=online
-apptainer exec --nv --bind "$SLURM_TMPDIR"/vhr-silva:/datasets/vhr-silva --bind "$SLURM_TMPDIR"/hg:/hg --env "WANDB_MODE=online" ../vhr_mask2former.sif \
-  bash -c "HF_HOME=/hg PYTHONPATH=. python vhr_mask2former/image_m2f/sweep/sweep.py \
-    --sweep-id "$SWEEP_ID" \
-    --dataset-name silva-vhr \
-    --subset-name forests"
+export PYTHONNOUSERSITE=1
+apptainer exec --nv --bind "$SLURM_TMPDIR"/vhr-silva:/datasets/vhr-silva --bind "$SLURM_TMPDIR"/hg:/hg --env "WANDB_MODE=online" ../yolo.sif \
+  bash -c "PYTHONPATH=. $(python3 -m venv venv; source venv/bin/activate; pip install -e '.[dev]'; pip install -r requirements.txt; PYTHONPATH=. python ultralytics/sweep.py) --size $SIZE"
+

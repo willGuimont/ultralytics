@@ -26,7 +26,6 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
-requirements.txt
 setup.py
 ultralytics.egg-info
 
@@ -174,3 +173,6 @@ pnnx*
 
 # calibration image
 calibration_*.npy
+
+scripts/yolo
+yolo11s-sweep

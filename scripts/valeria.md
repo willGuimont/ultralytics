@@ -22,28 +22,6 @@ apptainer build yolo.sif yolo/
 apptainer shell --nv yolo.sif
 ```
 
-## Setup Wandb
-
-To use Weights & Biases (wandb) for tracking experiments, you need to specify your API key in the environment:
-
-```shell
-# Add to your .bashrc or .bash_profile
-export WANDB_API_KEY=your_wandb_api_key
-exoirt WANDB_MODE=online
-```
-
-**NOTE:** To use sweeps, your compute node will need to have internet access.
-
-## Setup Hugging Face
-
-```shell
-module load python
-virtualenv --no-download venv
-source venv/bin/activate
-pip install "huggingface_hub[cli]" --no-index
-huggingface-cli login
-```
-
 ## Test it on Valeria
 
 ```shell
