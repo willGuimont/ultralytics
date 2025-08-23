@@ -18,6 +18,7 @@ cp -r "$HOME"/ultralytics/ ./
 cp -r "$HOME"/projects/def-phgig4/silva_vhr/yolo.sif ./
 cp -r "$HOME"/projects/def-phgig4/silva_vhr/vhr-silva.zip ./
 cp -r "$HOME"/projects/def-phgig4/silva_vhr/hg ./hg || mkdir hg
+cp -r "$HOME"/projects/def-phgig4/silva_vhr/*.pt ./ultralytics/
 
 # Prepare dataset
 unzip -q vhr-silva.zip
@@ -28,7 +29,7 @@ module load httpproxy
 
 cd ultralytics || exit 1
 export WANDB_MODE=online
-export PYTHONNOUSERSITE=1
+export PYTHONPATH=.
 apptainer exec --nv --bind "$SLURM_TMPDIR"/vhr-silva:/datasets/vhr-silva --bind "$SLURM_TMPDIR"/hg:/hg --env "WANDB_MODE=online" ../yolo.sif \
-  bash -c "PYTHONPATH=. $(python3 -m venv venv; source venv/bin/activate; pip install -e '.[dev]'; pip install -r requirements.txt; PYTHONPATH=. python ultralytics/sweep.py) --size $SIZE"
+  bash -c "python3 -m venv venv; source venv/bin/activate; pip install -e '.[dev]'; pip install -r requirements.txt; PYTHONPATH=. python ultralytics/sweep.py --size $SIZE"
 

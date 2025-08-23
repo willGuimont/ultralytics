@@ -14,7 +14,7 @@ if __name__ == '__main__':
     model = YOLO(f'yolo11{size}-seg.pt')
     result_grid = model.tune(
         imgsz=[1456,1092],
-        iterations=500,
+        iterations=100,
         data='/datasets/vhr-silva/kfold_1.yaml',
         use_ray=True,
         epochs=300,
