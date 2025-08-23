@@ -10,6 +10,7 @@ def run_ray_tune(
     grace_period: int = 10,
     gpu_per_trial: int = None,
     max_samples: int = 10,
+    wandb_project='',
     **train_args,
 ):
     """
@@ -120,7 +121,7 @@ def run_ray_tune(
     )
 
     # Define the callbacks for the hyperparameter search
-    tuner_callbacks = [WandbLoggerCallback(project="YOLOv8-tune")] if wandb else []
+    tuner_callbacks = [WandbLoggerCallback(project=wandb_project)] if wandb else []
 
     # Create the Ray Tune hyperparameter search tuner
     tune_dir = get_save_dir(

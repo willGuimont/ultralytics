@@ -72,11 +72,11 @@ def convert_coco(
     # Create dataset directory
     save_dir = Path(save_dir)
     for p in save_dir / "labels", save_dir / "images":
-        shutil.rmtree(p)
+        shutil.rmtree(p, ignore_errors=True)
         p.mkdir(parents=True, exist_ok=True)  # make dir
 
     # Import json
-    for json_file in sorted(Path(labels_dir).resolve().glob("*.json")):
+    for json_file in sorted(Path(labels_dir).resolve().glob("split_*.json")):
         lname = "" if lvis else json_file.stem.replace("instances_", "")
         fn = Path(save_dir) / "labels" / lname  # folder name
         fn.mkdir(parents=True, exist_ok=True)
@@ -305,14 +305,8 @@ def prepare_k_folds(root):
 
 if __name__ == '__main__':
     convert_coco(
-        '/home/william/Documents/datasets/vhr-silva/subsets/forests',
-        '/home/william/Documents/datasets/vhr-silva/',
+        '/datasets/vhr-silva/subsets/forests',
+        '/datasets/vhr-silva/',
         use_segments=True,
     )
-    # gen_yaml('/home/william/Documents/datasets/vhr-silva/subsets/forests/split_1.json',
-    #          '/home/william/Documents/datasets/vhr-silva/silva.yaml')
-    # viz_masks(
-    #     '/home/william/Documents/datasets/vhr-silva/data/tif-8/forests/DCIM/158_FUJI/DSCF8962.tif',
-    #     '/home/william/Documents/datasets/vhr-silva/labels/split_1/DSCF8962.txt',
-    #     {i: str(i) for i in range(3)})
-    prepare_k_folds('/home/william/Documents/datasets/vhr-silva/')
+    prepare_k_folds('/datasets/vhr-silva/')

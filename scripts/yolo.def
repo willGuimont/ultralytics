@@ -1,0 +1,22 @@
+BootStrap: docker
+From: docker.io/pytorch/pytorch:2.8.0-cuda12.9-cudnn9-runtime
+
+%environment
+    export LD_LIBRARY_PATH=/opt/conda/lib:/usr/local/cuda/lib64:/usr/local/lib:/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
+    export REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+
+%files
+
+%post
+
+%runscript
+    bash
+
+%labels
+    Author wigum
+    ContactEmail william.guimont-martin@norlab.ulaval.ca
+    Name vhr-mask2former
+
+%help
+    This container is used to run the VHR Mask2Former model for semantic segmentation.
+    It is based on the NVIDIA PyTorch container and includes all necessary dependencies.
