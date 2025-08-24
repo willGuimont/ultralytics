@@ -1,6 +1,5 @@
 import argparse
 import os
-import pickle
 
 from ultralytics import YOLO
 
@@ -26,9 +25,10 @@ if __name__ == '__main__':
     )
     print(result_grid)
 
+    # Save the string representation of result_grid to a text file in $HOME/yolo11{size}-sweep
     output_dir = os.path.join(os.path.expanduser('~'), f'yolo11{size}-sweep')
     os.makedirs(output_dir, exist_ok=True)
-    result_path = os.path.join(output_dir, 'result_grid.pkl')
-    with open(result_path, 'wb') as f:
-        pickle.dump(result_grid, f)
+    result_path = os.path.join(output_dir, 'result_grid.txt')
+    with open(result_path, 'w') as f:
+        f.write(str(result_grid))
     print(f'Results saved to {result_path}')
