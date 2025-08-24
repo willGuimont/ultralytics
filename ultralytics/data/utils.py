@@ -374,10 +374,6 @@ def polygons2masks_overlap(
     return masks, index
 
 
-def fill_contours(imgsz: Tuple[int, int], polygons: List[np.ndarray], color: int = 1, downsample_ratio: int = 1):
-    ...
-
-
 def polygons2mask_shapes(imgsz: Tuple[int, int], segments: List[np.ndarray], all_shapes, downsample_ratio: int = 1):
     masks = np.zeros(
         (imgsz[0] // downsample_ratio, imgsz[1] // downsample_ratio),

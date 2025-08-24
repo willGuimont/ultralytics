@@ -61,11 +61,10 @@ def ann_to_contours(ann, orig_w: int, orig_h: int):
 
 
 def convert_coco(
-        labels_dir: str = "../coco/annotations/",
+        subsets_dir: str = "../coco/annotations/",
         save_dir: str = "coco_converted/",
         use_segments: bool = False,
         use_keypoints: bool = False,
-        lvis: bool = False,
         filetype: str = 'tif-8',
         flatten_cnts: bool = True,
 ):
@@ -75,67 +74,50 @@ def convert_coco(
         shutil.rmtree(p, ignore_errors=True)
         p.mkdir(parents=True, exist_ok=True)  # make dir
 
-    # Import json
-    for json_file in sorted(Path(labels_dir).resolve().glob("split_*.json")):
-        lname = "" if lvis else json_file.stem.replace("instances_", "")
-        fn = Path(save_dir) / "labels" / lname  # folder name
-        fn.mkdir(parents=True, exist_ok=True)
-        if lvis:
-            (fn / "train2017").mkdir(parents=True, exist_ok=True)
-            (fn / "val2017").mkdir(parents=True, exist_ok=True)
-        with open(json_file, encoding="utf-8") as f:
-            data = json.load(f)
+    for subset_path in sorted(d for d in Path(subsets_dir).resolve().iterdir() if d.is_dir()):
+        subset_name = subset_path.name
+        # Import json
+        for json_file in sorted(Path(subset_path).resolve().glob("split_*.json")):
+            lname = f"{subset_name}_{json_file.stem}"
+            fn = Path(save_dir) / "labels" / lname  # folder name
+            fn.mkdir(parents=True, exist_ok=True)
+            with open(json_file, encoding="utf-8") as f:
+                data = json.load(f)
 
-        images = {f"{x['id']:d}": x for x in data["images"]}
-        annotations = defaultdict(list)
-        for ann in data["annotations"]:
-            annotations[ann["image_id"].__int__()].append(ann)
+            images = {f"{x['id']:d}": x for x in data["images"]}
+            annotations = defaultdict(list)
+            for ann in data["annotations"]:
+                annotations[ann["image_id"].__int__()].append(ann)
 
-        image_txt = []
-        for img_id, anns in TQDM(annotations.items(), desc=f"Annotations {json_file}"):
-            img = images[f"{img_id:d}"]
-            # NOTE: images appear downscaled by 8 (existing code divides by 8). Preserve behavior.
-            orig_h, orig_w = img["height"], img["width"]
-            h, w = orig_h / 8, orig_w / 8
-            f_rel = str(Path(img["coco_url"]).relative_to("http://images.cocodataset.org")) if lvis else img[
-                "file_name"]
-            if lvis:
-                image_txt.append(str(Path("./images") / f_rel))
+            image_txt = []
+            for img_id, anns in TQDM(annotations.items(), desc=f"Annotations {json_file}"):
+                img = images[f"{img_id:d}"]
+                # NOTE: images appear downscaled by 8 (existing code divides by 8). Preserve behavior.
+                orig_h, orig_w = img["height"], img["width"]
+                h, w = orig_h / 8, orig_w / 8
+                f_rel = img["file_name"]
 
-            bboxes = []
-            segments = []
-            keypoints = []
-            orig_shapes = []
-            for ann in anns:
-                if ann.get("iscrowd", False):
-                    continue
-                cls = ann["category_id"]
-                # Derive contours (list of Nx2 arrays) using unified approach
-                contours = ann_to_contours(ann, orig_w, orig_h) if use_segments else []
+                bboxes = []
+                segments = []
+                keypoints = []
+                orig_shapes = []
+                for ann in anns:
+                    if ann.get("iscrowd", False):
+                        continue
+                    cls = ann["category_id"]
+                    # Derive contours (list of Nx2 arrays) using unified approach
+                    contours = ann_to_contours(ann, orig_w, orig_h) if use_segments else []
 
-                if use_segments and contours:
-                    if flatten_cnts:
-                        shape = [len(x) for x in contours]
-                        orig_shapes.append(shape)
+                    if use_segments and contours:
+                        if flatten_cnts:
+                            shape = [len(x) for x in contours]
+                            orig_shapes.append(shape)
 
-                        c = np.vstack(contours)
-                        c = c.reshape(-1, 2)
-                        flattened = (c / np.array([w, h])).reshape(-1).tolist()
-                        segments.append([cls] + flattened)
+                            c = np.vstack(contours)
+                            c = c.reshape(-1, 2)
+                            flattened = (c / np.array([w, h])).reshape(-1).tolist()
+                            segments.append([cls] + flattened)
 
-                        x_min, y_min = c.min(axis=0)
-                        x_max, y_max = c.max(axis=0)
-                        bw = x_max - x_min
-                        bh = y_max - y_min
-                        cx = x_min + bw / 2
-                        cy = y_min + bh / 2
-                        bboxes.append([cls, cx / w, cy / h, bw / w, bh / h])
-                    else:
-                        for c in contours:
-                            # Normalize polygon coordinates (still dividing by w,h as in original implementation)
-                            poly_norm = (c / np.array([w, h])).reshape(-1).tolist()
-                            segments.append([cls] + poly_norm)
-                            # Bounding box from contour
                             x_min, y_min = c.min(axis=0)
                             x_max, y_max = c.max(axis=0)
                             bw = x_max - x_min
@@ -143,54 +125,63 @@ def convert_coco(
                             cx = x_min + bw / 2
                             cy = y_min + bh / 2
                             bboxes.append([cls, cx / w, cy / h, bw / w, bh / h])
-                else:
-                    # Fallback to annotation bbox (COCO format tlx,tly,w,h)
-                    box = np.array(ann["bbox"], dtype=np.float64)
-                    box[:2] += box[2:] / 2  # to center
-                    box[[0, 2]] /= w
-                    box[[1, 3]] /= h
-                    if box[2] > 0 and box[3] > 0:
-                        bboxes.append(
-                            [cls] + box.tolist()[1:])  # exclude cls duplication pattern; keep cls + normalized box
-                        if use_segments:
-                            segments.append([])  # placeholder to align indices
-
-                if use_keypoints and ann.get("keypoints") is not None:
-                    kps = (np.array(ann["keypoints"]).reshape(-1, 3) / np.array([w, h, 1])).reshape(-1).tolist()
-                    # Attach keypoints to each added instance (bbox count since segments may be empty placeholders)
-                    instance_count = len(bboxes) - len(keypoints)
-                    for i in range(instance_count):
-                        # Associate with most recent bbox instance(s)
-                        keypoints.append([cls] + bboxes[-instance_count + i][1:] + kps)
-
-            img_path = Path(f_rel.replace('<filetype>', filetype))
-            image_out = save_dir / "images" / json_file.stem
-            image_out.mkdir(parents=True, exist_ok=True)
-            # Copy corresponding image (adjust tif -> tif-8 path as before)
-            try:
-                shutil.copy((save_dir / str(img_path).replace('tif/', 'tif-8/')).with_suffix('.tif'), image_out)
-            except Exception as e:
-                LOGGER.warning(f"Image copy failed for {img_path}: {e}")
-            with open((fn / img_path.name).with_suffix(".txt"), "w", encoding="utf-8") as file:
-                for i in range(len(bboxes)):
-                    if use_keypoints:
-                        line = (*(keypoints[i]),) if i < len(keypoints) else (*(bboxes[i],),)
+                        else:
+                            for c in contours:
+                                # Normalize polygon coordinates (still dividing by w,h as in original implementation)
+                                poly_norm = (c / np.array([w, h])).reshape(-1).tolist()
+                                segments.append([cls] + poly_norm)
+                                # Bounding box from contour
+                                x_min, y_min = c.min(axis=0)
+                                x_max, y_max = c.max(axis=0)
+                                bw = x_max - x_min
+                                bh = y_max - y_min
+                                cx = x_min + bw / 2
+                                cy = y_min + bh / 2
+                                bboxes.append([cls, cx / w, cy / h, bw / w, bh / h])
                     else:
-                        chosen = segments[i] if use_segments and i < len(segments) and len(segments[i]) > 0 else bboxes[
-                            i]
-                        line = (*chosen,)
-                    file.write(("%g " * len(line)).rstrip() % line + "\n")
-            with open((fn / img_path.name).with_suffix(".shapes"), "w", encoding="utf-8") as file:
-                for i in range(len(orig_shapes)):
-                    line = (*orig_shapes[i],)
-                    file.write(("%g " * len(line)).rstrip() % line + "\n")
+                        # Fallback to annotation bbox (COCO format tlx,tly,w,h)
+                        box = np.array(ann["bbox"], dtype=np.float64)
+                        box[:2] += box[2:] / 2  # to center
+                        box[[0, 2]] /= w
+                        box[[1, 3]] /= h
+                        if box[2] > 0 and box[3] > 0:
+                            bboxes.append(
+                                [cls] + box.tolist()[1:])  # exclude cls duplication pattern; keep cls + normalized box
+                            if use_segments:
+                                segments.append([])  # placeholder to align indices
 
-        if lvis:
-            filename = Path(save_dir) / json_file.name.replace("lvis_v1_", "").replace(".json", ".txt")
-            with open(filename, "a", encoding="utf-8") as f:
-                f.writelines(f"{line}\n" for line in image_txt)
+                    if use_keypoints and ann.get("keypoints") is not None:
+                        kps = (np.array(ann["keypoints"]).reshape(-1, 3) / np.array([w, h, 1])).reshape(-1).tolist()
+                        # Attach keypoints to each added instance (bbox count since segments may be empty placeholders)
+                        instance_count = len(bboxes) - len(keypoints)
+                        for i in range(instance_count):
+                            # Associate with most recent bbox instance(s)
+                            keypoints.append([cls] + bboxes[-instance_count + i][1:] + kps)
 
-    LOGGER.info(f"{'LVIS' if lvis else 'COCO'} data converted successfully.\nResults saved to {save_dir.resolve()}")
+                img_path = Path(f_rel.replace('<filetype>', filetype))
+                image_out = save_dir / "images" / f"{subset_name}_{json_file.stem}"
+                image_out.mkdir(parents=True, exist_ok=True)
+                # Copy corresponding image (adjust tif -> tif-8 path as before)
+                try:
+                    shutil.copy((save_dir / str(img_path).replace('tif/', 'tif-8/')).with_suffix('.tif'), image_out)
+                except Exception as e:
+                    LOGGER.warning(f"Image copy failed for {img_path}: {e}")
+                with open((fn / img_path.name).with_suffix(".txt"), "w", encoding="utf-8") as file:
+                    for i in range(len(bboxes)):
+                        if use_keypoints:
+                            line = (*(keypoints[i]),) if i < len(keypoints) else (*(bboxes[i],),)
+                        else:
+                            chosen = segments[i] if use_segments and i < len(segments) and len(segments[i]) > 0 else \
+                            bboxes[
+                                i]
+                            line = (*chosen,)
+                        file.write(("%g " * len(line)).rstrip() % line + "\n")
+                with open((fn / img_path.name).with_suffix(".shapes"), "w", encoding="utf-8") as file:
+                    for i in range(len(orig_shapes)):
+                        line = (*orig_shapes[i],)
+                        file.write(("%g " * len(line)).rstrip() % line + "\n")
+
+    LOGGER.info(f"COCO data converted successfully.\nResults saved to {save_dir.resolve()}")
 
 
 def parse_yolov8_seg_txt(label_path):
@@ -271,41 +262,43 @@ def gen_kfold_yaml(json_path, out_path, kfold_name):
 
 def prepare_k_folds(root):
     root = Path(root)
-    image_folder = root / 'images'
-    label_folder = root / 'labels'
-    splits = [f.stem for f in label_folder.iterdir() if f.is_dir()]
-    n_splits = len(splits)
-    split_indices = set(range(n_splits))
-    # TODO one yaml per fold
-    # TODO one labels and images folder for kfold_1_train, kfold_1_val, kfold_1_test
-    for k_fold_idx, test_idx in enumerate(range(len(split_indices))):
-        val_idx = (test_idx + 1) % n_splits
-        test_split = [splits[test_idx]]
-        val_split = [splits[val_idx]]
-        train_splits = [splits[si] for si in split_indices - {test_idx, val_idx}]
+    subsets = set(f.name.split('_')[0] for f in (root / "labels").iterdir() if f.is_dir())
 
-        kfold_name = f"kfold_{k_fold_idx + 1}"
-        gen_kfold_yaml(root / "subsets" / "forests" / "split_1.json", (root / kfold_name).with_suffix('.yaml'), kfold_name)
+    for subset in subsets:
+        image_folder = root / 'images'
+        label_folder = root / 'labels'
+        splits = sorted([name for f in label_folder.iterdir() if f.is_dir() and (name := f.name).startswith(subset)])
+        n_splits = len(splits)
+        split_indices = set(range(n_splits))
 
-        kfold_splits = dict(train=train_splits, val=val_split, test=test_split)
-        for mode, splits_in_kfold in kfold_splits.items():
-            kfold_image_path = image_folder / f"{kfold_name}_{mode}"
-            kfold_label_path = label_folder / f"{kfold_name}_{mode}"
+        for k_fold_idx, test_idx in enumerate(range(len(split_indices))):
+            val_idx = (test_idx + 1) % n_splits
+            test_split = [splits[test_idx]]
+            val_split = [splits[val_idx]]
+            train_splits = [splits[si] for si in split_indices - {test_idx, val_idx}]
 
-            for p in kfold_image_path, kfold_label_path:
-                shutil.rmtree(p, ignore_errors=True)
-                p.mkdir(parents=True, exist_ok=True)
+            kfold_name = f"{subset}_kfold_{k_fold_idx + 1}"
+            gen_kfold_yaml(root / "subsets" / subset / f"split_1.json", (root / kfold_name).with_suffix('.yaml'), kfold_name)
 
-            for split_name in splits_in_kfold:
-                for path in [f for f in (image_folder / split_name).iterdir() if f.is_file()]:
-                    shutil.copy(path, kfold_image_path)
-                for path in [f for f in (label_folder / split_name).iterdir() if f.is_file()]:
-                    shutil.copy(path, kfold_label_path)
+            kfold_splits = dict(train=train_splits, val=val_split, test=test_split)
+            for mode, splits_in_kfold in kfold_splits.items():
+                kfold_image_path = image_folder / f"{kfold_name}_{mode}"
+                kfold_label_path = label_folder / f"{kfold_name}_{mode}"
+
+                for p in kfold_image_path, kfold_label_path:
+                    shutil.rmtree(p, ignore_errors=True)
+                    p.mkdir(parents=True, exist_ok=True)
+
+                for split_name in splits_in_kfold:
+                    for path in [f for f in (image_folder / split_name).iterdir() if f.is_file()]:
+                        shutil.copy(path, kfold_image_path)
+                    for path in [f for f in (label_folder / split_name).iterdir() if f.is_file()]:
+                        shutil.copy(path, kfold_label_path)
 
 
 if __name__ == '__main__':
     convert_coco(
-        '/datasets/vhr-silva/subsets/forests',
+        '/datasets/vhr-silva/subsets/',
         '/datasets/vhr-silva/',
         use_segments=True,
     )

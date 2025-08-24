@@ -15,7 +15,7 @@ if __name__ == '__main__':
     result_grid = model.tune(
         imgsz=[1456,1092],
         iterations=100,
-        data='/datasets/vhr-silva/kfold_1.yaml',
+        data='/datasets/vhr-silva/forests-8_kfold_5.yaml',
         use_ray=True,
         epochs=300,
         grace_period=10,
