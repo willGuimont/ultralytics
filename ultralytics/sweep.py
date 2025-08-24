@@ -63,7 +63,7 @@ if __name__ == '__main__':
     result_grid = model.tune(
         imgsz=[1456,1092],
         iterations=100,
-        data='/datasets/vhr-silva/forests-8_kfold_5.yaml',
+        data='/datasets/vhr-silva/forests-16_kfold_5.yaml',
         use_ray=True,
         space=space,
         epochs=100,
