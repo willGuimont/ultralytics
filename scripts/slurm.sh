@@ -9,8 +9,8 @@ cd $HOME/ultralytics || exit 1
 
 export WANDB_MODE=online
 export PYTHONPATH=.
-apptainer exec --nv --bind /data/vhr-silva:/datasets/vhr-silva --env "WANDB_MODE=online" ../yolo.sif \
-  bash -c "python3 -m venv venv; source venv/bin/activate; pip install -e '.[dev]'; pip install -r requirements.txt; PYTHONPATH=. python ultralytics/sweep.py --size $SIZE --iterations $ITER --split $SPLIT"
+apptainer exec --nv --bind /data/vhr-silva:/datasets/vhr-silva --env "WANDB_MODE=online" --env CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES ../yolo.sif \
+  bash -c "python3 -m venv venv; source venv/bin/activate; pip install -e '.[dev]'; pip install -r requirements.txt; PYTHONPATH=. python ultralytics/sweep.py --size $SIZE --iterations $ITER --split $SPLIT --model $MODEL"
 #podman run --gpus all --rm --ipc host \
 #      -e CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES \
 #      -e WANDB_API_KEY=$WANDB_API_KEY \

@@ -31,5 +31,5 @@ cd ultralytics || exit 1
 export WANDB_MODE=online
 export PYTHONPATH=.
 apptainer exec --nv --bind "$SLURM_TMPDIR"/vhr-silva:/datasets/vhr-silva --bind "$SLURM_TMPDIR"/hg:/hg --env "WANDB_MODE=online" ../yolo.sif \
-  bash -c "python3 -m venv venv; source venv/bin/activate; pip install -e '.[dev]'; pip install -r requirements.txt; PYTHONPATH=. python ultralytics/sweep.py --size $SIZE --iterations $ITER --split $SPLIT"
+  bash -c "python3 -m venv venv; source venv/bin/activate; pip install -e '.[dev]'; pip install -r requirements.txt; PYTHONPATH=. python ultralytics/sweep.py --size $SIZE --iterations $ITER --split $SPLIT --model $MODEL"
 
