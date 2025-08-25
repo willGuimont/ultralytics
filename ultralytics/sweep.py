@@ -53,8 +53,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='YOLO sweep script')
     parser.add_argument('--size', type=str, default='s', choices=['n', 's', 'm', 'l', 'x'],
                         help='Model size: n, s, m, l, or x (default: s)')
+    parser.add_argument('--iterations', type=int, default=100,
+                        help='Number of hyperparameter tuning iterations (default: 100)')
     args = parser.parse_args()
     size = args.size
+    iterations = args.iterations
 
     model = YOLO(f'yolo11{size}-seg.pt')
 
@@ -64,7 +67,7 @@ if __name__ == '__main__':
     # Base tuning kwargs
     tune_kwargs = dict(
         imgsz=[1456, 1092],
-        iterations=100,
+        iterations=iterations,
         data='/datasets/vhr-silva/forests-16_kfold_5.yaml',
         use_ray=True,
         space=space,
@@ -77,7 +80,7 @@ if __name__ == '__main__':
 
     # Reduce batch size for the largest model to lower VRAM requirements
     if size == 'x':
-        tune_kwargs['batch'] = 1
+        tune_kwargs['batch'] = 8  # Adjust as needed for your GPU memory
 
     result_grid = model.tune(**tune_kwargs)
     print(result_grid)
