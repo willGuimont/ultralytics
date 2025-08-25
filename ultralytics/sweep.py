@@ -74,16 +74,18 @@ if __name__ == '__main__':
         data=f'/datasets/vhr-silva/forests-{split}_kfold_5.yaml',
         use_ray=True,
         space=space,
-        epochs=100,
+        epochs=200,
         project=name,
         wandb_project=name,
         name=name,
         gpu_per_trial=1,
     )
 
-    # Reduce batch size for the largest model to lower VRAM requirements
     if size == 'x':
-        tune_kwargs['batch'] = 8  # Adjust as needed for your GPU memory
+        tune_kwargs['batch'] = 1
+
+    if split == 16:
+        tune_kwargs['imgsz'] = [728, 546]
 
     result_grid = model.tune(**tune_kwargs)
     print(result_grid)

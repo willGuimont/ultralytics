@@ -163,7 +163,8 @@ def convert_coco(
                 image_out.mkdir(parents=True, exist_ok=True)
                 # Copy corresponding image (adjust tif -> tif-8 path as before)
                 try:
-                    shutil.copy((save_dir / str(img_path).replace('tif/', 'tif-8/')).with_suffix('.tif'), image_out)
+                    size = subset_name.split('-')[1]
+                    shutil.copy((save_dir / str(img_path).replace('tif/', f'tif-{size}/')).with_suffix('.tif'), image_out)
                 except Exception as e:
                     LOGGER.warning(f"Image copy failed for {img_path}: {e}")
                 with open((fn / img_path.name).with_suffix(".txt"), "w", encoding="utf-8") as file:
@@ -267,7 +268,7 @@ def prepare_k_folds(root):
     for subset in subsets:
         image_folder = root / 'images'
         label_folder = root / 'labels'
-        splits = sorted([name for f in label_folder.iterdir() if f.is_dir() and (name := f.name).startswith(subset)])
+        splits = sorted([name for f in label_folder.iterdir() if f.is_dir() and (name := f.name).startswith(f'{subset}_split_')])
         n_splits = len(splits)
         split_indices = set(range(n_splits))
 

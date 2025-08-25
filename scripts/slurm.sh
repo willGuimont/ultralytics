@@ -14,7 +14,7 @@ podman run --gpus all --rm --ipc host \
   	--mount type=bind,source=$(pwd)/,target=/code \
       --mount type=bind,source=/data/vhr-silva,target=/datasets/vhr-silva \
   	--mount type=bind,source=/dev/shm,target=/dev/shm \
-  	pytorch/pytorch:2.8.0-cuda12.9-cudnn9-runtime  bash -c "cd /code; python3 -m venv venv; source venv/bin/activate; pip install -e '.[dev]'; pip install -r requirements.txt; PYTHONPATH=. python ultralytics/sweep.py --size $SIZE"
+  	pytorch/pytorch:2.8.0-cuda12.9-cudnn9-runtime  bash -c "cd /code; python3 -m venv venv; source venv/bin/activate; pip install -e '.[dev]'; pip install -r requirements.txt; PYTHONPATH=. python ultralytics/sweep.py --size $SIZE --iterations $ITER --split $SPLIT"
 
 # container_id=$(
 #   podman run -d --gpus all --rm --ipc host \
