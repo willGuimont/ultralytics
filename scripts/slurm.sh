@@ -7,14 +7,20 @@
 
 cd $HOME/ultralytics || exit 1
 
-podman run --gpus all --rm --ipc host \
-      -e CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES \
-      -e WANDB_API_KEY=$WANDB_API_KEY \
-      -e SLURM_JOB_ID=$SLURM_JOB_ID \
-  	--mount type=bind,source=$(pwd)/,target=/code \
-      --mount type=bind,source=/data/vhr-silva,target=/datasets/vhr-silva \
-  	--mount type=bind,source=/dev/shm,target=/dev/shm \
-  	pytorch/pytorch:2.8.0-cuda12.9-cudnn9-runtime  bash -c "cd /code; python3 -m venv venv; source venv/bin/activate; pip install -e '.[dev]'; pip install -r requirements.txt; PYTHONPATH=. python ultralytics/sweep.py --size $SIZE --iterations $ITER --split $SPLIT"
+export WANDB_MODE=online
+export PYTHONPATH=.
+apptainer exec --nv --bind /data/vhr-silva:/datasets/vhr-silva --env "WANDB_MODE=online" ../yolo.sif \
+  bash -c "python3 -m venv venv; source venv/bin/activate; pip install -e '.[dev]'; pip install -r requirements.txt; PYTHONPATH=. python ultralytics/sweep.py --size $SIZE --iterations $ITER --split $SPLIT"
+#podman run --gpus all --rm --ipc host \
+#      -e CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES \
+#      -e WANDB_API_KEY=$WANDB_API_KEY \
+#      -e SLURM_JOB_ID=$SLURM_JOB_ID \
+#  	--mount type=bind,source=$(pwd)/,target=/code \
+#      --mount type=bind,source=/data/vhr-silva,target=/datasets/vhr-silva \
+#  	--mount type=bind,source=/dev/shm,target=/dev/shm \
+#  	--mount type=bind,source=$HOME/.config/Ultralytics,target=/root/.config/Ultralytics \
+#  	--env "WANDB_MODE=online" \
+#  	pytorch/pytorch:2.8.0-cuda12.9-cudnn9-runtime  bash -c "cd /code; python3 -m venv venv; source venv/bin/activate; pip install -e '.[dev]'; pip install -r requirements.txt; PYTHONPATH=. python ultralytics/sweep.py --size $SIZE --iterations $ITER --split $SPLIT"
 
 # container_id=$(
 #   podman run -d --gpus all --rm --ipc host \

@@ -2,3 +2,4 @@ wandb
 pycocotools
 albumentations
 ray[tune]
+torchmetrics
