@@ -75,7 +75,7 @@ if __name__ == '__main__':
     space = build_search_space()
 
     # Base tuning kwargs
-    name = f'yolo11{size}-sweep-split-{split}'
+    name = f'yolo{model_version}{size}-sweep-split-{split}'
     tune_kwargs = dict(
         imgsz=[1456, 1092],
         iterations=iterations,
