@@ -69,13 +69,14 @@ if __name__ == '__main__':
         pt = f'yolov12{size}-seg.pt'
     else:
         raise ValueError(f'Invalid model {model_version}')
+
     model = YOLO(pt)
 
     # Ray Tune search space honoring disabled augs
     space = build_search_space()
 
     # Base tuning kwargs
-    name = f'yolo11{size}-sweep-split-{split}'
+    name = f'yolo{model_version}{size}-sweep-split-{split}'
     tune_kwargs = dict(
         imgsz=[1456, 1092],
         iterations=iterations,
