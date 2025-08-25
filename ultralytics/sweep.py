@@ -53,15 +53,23 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='YOLO sweep script')
     parser.add_argument('--size', type=str, default='s', choices=['n', 's', 'm', 'l', 'x'],
                         help='Model size: n, s, m, l, or x (default: s)')
+    parser.add_argument('--model', type=int, default=11, help='Model version')
     parser.add_argument('--iterations', type=int, default=100,
                         help='Number of hyperparameter tuning iterations (default: 100)')
     parser.add_argument('--split', type=int, default=8, help='Image downscaling')
     args = parser.parse_args()
     size = args.size
+    model_version = args.model
     iterations = args.iterations
     split = args.split
 
-    model = YOLO(f'yolo11{size}-seg.pt')
+    if model_version == 11:
+        pt = f'yolo{size}-seg.pt'
+    elif model_version == 12:
+        pt = f'yolov12{size}-seg.pt'
+    else:
+        raise ValueError(f'Invalid model {model_version}')
+    model = YOLO(pt)
 
     # Ray Tune search space honoring disabled augs
     space = build_search_space()

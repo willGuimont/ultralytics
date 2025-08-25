@@ -175,4 +175,4 @@ pnnx*
 calibration_*.npy
 
 scripts/yolo
-yolo11*-sweep
+yolo11*-sweep*
