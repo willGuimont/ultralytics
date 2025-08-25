@@ -1,5 +1,6 @@
 import argparse
 import os
+from datetime import datetime
 
 from ultralytics import YOLO
 
@@ -60,8 +61,9 @@ if __name__ == '__main__':
     # Ray Tune search space honoring disabled augs
     space = build_search_space()
 
-    result_grid = model.tune(
-        imgsz=[1456,1092],
+    # Base tuning kwargs
+    tune_kwargs = dict(
+        imgsz=[1456, 1092],
         iterations=100,
         data='/datasets/vhr-silva/forests-16_kfold_5.yaml',
         use_ray=True,
@@ -70,12 +72,19 @@ if __name__ == '__main__':
         project=f'yolo11{size}-sweep',
         wandb_project=f'yolo11{size}-sweep',
         name=f'yolo11{size}-sweep',
-        gpu_per_trial=1
+        gpu_per_trial=1,
     )
+
+    # Reduce batch size for the largest model to lower VRAM requirements
+    if size == 'x':
+        tune_kwargs['batch'] = 1
+
+    result_grid = model.tune(**tune_kwargs)
     print(result_grid)
 
-    # Save the string representation of result_grid to a text file in $HOME/yolo11{size}-sweep
-    output_dir = os.path.join(os.path.expanduser('~'), f'yolo11{size}-sweep')
+    # Save the string representation of result_grid to a timestamped directory in $HOME (no pickling)
+    timestamp = datetime.now().strftime('%Y%m%d-%H%M%S')
+    output_dir = os.path.join(os.path.expanduser('~'), f'yolo11{size}-sweep-{timestamp}')
     os.makedirs(output_dir, exist_ok=True)
     result_path = os.path.join(output_dir, 'result_grid.txt')
     with open(result_path, 'w') as f:
