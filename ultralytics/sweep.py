@@ -55,9 +55,11 @@ if __name__ == '__main__':
                         help='Model size: n, s, m, l, or x (default: s)')
     parser.add_argument('--iterations', type=int, default=100,
                         help='Number of hyperparameter tuning iterations (default: 100)')
+    parser.add_argument('--split', type=int, default=8, help='Image downscaling')
     args = parser.parse_args()
     size = args.size
     iterations = args.iterations
+    split = args.split
 
     model = YOLO(f'yolo11{size}-seg.pt')
 
@@ -65,16 +67,17 @@ if __name__ == '__main__':
     space = build_search_space()
 
     # Base tuning kwargs
+    name = f'yolo11{size}-sweep-split-{split}'
     tune_kwargs = dict(
         imgsz=[1456, 1092],
         iterations=iterations,
-        data='/datasets/vhr-silva/forests-16_kfold_5.yaml',
+        data=f'/datasets/vhr-silva/forests-{split}_kfold_5.yaml',
         use_ray=True,
         space=space,
         epochs=100,
-        project=f'yolo11{size}-sweep',
-        wandb_project=f'yolo11{size}-sweep',
-        name=f'yolo11{size}-sweep',
+        project=name,
+        wandb_project=name,
+        name=name,
         gpu_per_trial=1,
     )
 
@@ -87,7 +90,7 @@ if __name__ == '__main__':
 
     # Save the string representation of result_grid to a timestamped directory in $HOME (no pickling)
     timestamp = datetime.now().strftime('%Y%m%d-%H%M%S')
-    output_dir = os.path.join(os.path.expanduser('~'), f'yolo11{size}-sweep-{timestamp}')
+    output_dir = os.path.join(os.path.expanduser('~'), f'yolo11{size}-sweep-{split}-{timestamp}')
     os.makedirs(output_dir, exist_ok=True)
     result_path = os.path.join(output_dir, 'result_grid.txt')
     with open(result_path, 'w') as f:
