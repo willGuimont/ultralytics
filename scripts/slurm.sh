@@ -2,7 +2,7 @@
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=16
 #SBATCH --time=3-00
-#SBATCH --job-name=yolo-16
+#SBATCH --job-name=yolo-$MODEL-$SIZE-split-$SPLIT
 #SBATCH --output=%x-%j.out
 
 cd $HOME/ultralytics || exit 1

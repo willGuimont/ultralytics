@@ -65,7 +65,7 @@ if __name__ == '__main__':
     split = args.split
 
     if model_version == 11:
-        pt = f'yolo{size}-seg.pt'
+        pt = f'yolo11{size}-seg.pt'
     elif model_version == 12:
         pt = f'yolov12{size}-seg.pt'
     else:
@@ -89,6 +89,7 @@ if __name__ == '__main__':
         wandb_project=name,
         name=name,
         gpu_per_trial=1,
+        save=False
     )
 
     if size == 'x':

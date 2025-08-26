@@ -6,7 +6,7 @@
 #SBATCH --gres=gpu:a100:1
 #SBATCH --mail-user=william.guimont-martin@norlab.ulaval.ca
 #SBATCH --mail-type=FAIL,TIME_LIMIT
-#SBATCH --job-name=yolo-small-sweep
+#SBATCH --job-name=yolo-$MODEL-$SIZE-$SPLIT
 #SBATCH --output=%x-%j.out
 #SBATCH --account=def-phgig4
 ##SBATCH --array=0-9
