@@ -97,6 +97,8 @@ if __name__ == '__main__':
 
     if split == 16:
         tune_kwargs['imgsz'] = [728, 546]
+    elif split == 32:
+        tune_kwargs['imgsz'] = [364, 273]
 
     result_grid = model.tune(**tune_kwargs)
     print(result_grid)
