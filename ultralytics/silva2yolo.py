@@ -61,8 +61,8 @@ def ann_to_contours(ann, orig_w: int, orig_h: int):
 
 
 def convert_coco(
-        subsets_dir: str = "../coco/annotations/",
-        save_dir: str = "coco_converted/",
+        subsets_dir: Path = "../coco/annotations/",
+        save_dir: Path = "coco_converted/",
         use_segments: bool = False,
         use_keypoints: bool = False,
         filetype: str = 'tif-8',
@@ -164,7 +164,8 @@ def convert_coco(
                 # Copy corresponding image (adjust tif -> tif-8 path as before)
                 try:
                     size = subset_name.split('-')[1]
-                    shutil.copy((save_dir / str(img_path).replace('tif/', f'tif-{size}/')).with_suffix('.tif'), image_out)
+                    shutil.copy((save_dir / str(img_path).replace('tif/', f'tif-{size}/')).with_suffix('.tif'),
+                                image_out)
                 except Exception as e:
                     LOGGER.warning(f"Image copy failed for {img_path}: {e}")
                 with open((fn / img_path.name).with_suffix(".txt"), "w", encoding="utf-8") as file:
@@ -173,8 +174,8 @@ def convert_coco(
                             line = (*(keypoints[i]),) if i < len(keypoints) else (*(bboxes[i],),)
                         else:
                             chosen = segments[i] if use_segments and i < len(segments) and len(segments[i]) > 0 else \
-                            bboxes[
-                                i]
+                                bboxes[
+                                    i]
                             line = (*chosen,)
                         file.write(("%g " * len(line)).rstrip() % line + "\n")
                 with open((fn / img_path.name).with_suffix(".shapes"), "w", encoding="utf-8") as file:
@@ -246,10 +247,11 @@ def viz_masks(image_path, txt_path, id2label):
     plt.show()
 
 
-def gen_kfold_yaml(json_path, out_path, kfold_name):
-    with open(json_path, 'r') as f:
-        data = json.load(f)
-    cats = data['categories']
+def gen_kfold_yaml(json_path, out_path, kfold_name, cats=None):
+    if cats is None:
+        with open(json_path, 'r') as f:
+            data = json.load(f)
+        cats = data['categories']
     output = dict(
         path='vhr-silva',
         train=f'images/{kfold_name}_train',
@@ -268,7 +270,8 @@ def prepare_k_folds(root):
     for subset in subsets:
         image_folder = root / 'images'
         label_folder = root / 'labels'
-        splits = sorted([name for f in label_folder.iterdir() if f.is_dir() and (name := f.name).startswith(f'{subset}_split_')])
+        splits = sorted(
+            [name for f in label_folder.iterdir() if f.is_dir() and (name := f.name).startswith(f'{subset}_split_')])
         n_splits = len(splits)
         split_indices = set(range(n_splits))
 
@@ -279,7 +282,8 @@ def prepare_k_folds(root):
             train_splits = [splits[si] for si in split_indices - {test_idx, val_idx}]
 
             kfold_name = f"{subset}_kfold_{k_fold_idx + 1}"
-            gen_kfold_yaml(root / "subsets" / subset / f"split_1.json", (root / kfold_name).with_suffix('.yaml'), kfold_name)
+            gen_kfold_yaml(root / "subsets" / subset / f"split_1.json", (root / kfold_name).with_suffix('.yaml'),
+                           kfold_name)
 
             kfold_splits = dict(train=train_splits, val=val_split, test=test_split)
             for mode, splits_in_kfold in kfold_splits.items():
@@ -297,10 +301,46 @@ def prepare_k_folds(root):
                         shutil.copy(path, kfold_label_path)
 
 
+def generate_binary_segmentation(root: Path):
+    img_path = root / "images"
+    label_path = root / "labels"
+
+    fold_names = sorted(f.name for f in img_path.iterdir() if f.is_dir())
+    for name in fold_names:
+        new_name = f"binary_{name}"
+        img_folder = img_path / name
+        to_img = img_path / new_name
+        shutil.rmtree(to_img, ignore_errors=True)
+        shutil.copytree(img_folder, to_img)
+
+        label_folder = label_path / name
+        to_lab = label_path / new_name
+        shutil.rmtree(to_lab, ignore_errors=True)
+        shutil.copytree(label_folder, to_lab)
+
+        name_no_mode = '_'.join(new_name.split('_')[:-1])
+        gen_kfold_yaml(root, (root / name_no_mode).with_suffix('.yaml'),
+                       name_no_mode, cats=[dict(id=0, name='Tree')])
+
+        labels = sorted(f for f in to_lab.iterdir() if f.is_file() and f.suffix == '.txt')
+        for label in labels:
+            with open(label, 'r') as f:
+                lines = f.readlines()
+            new_lines = []
+            for line in lines:
+                values = line.split()
+                values[0] = '0'
+                new_lines.append(' '.join(values) + '\n')
+            with open(label, 'w') as f:
+                f.writelines(new_lines)
+
+
 if __name__ == '__main__':
+    root = Path('/datasets/vhr-silva/')
     convert_coco(
-        '/datasets/vhr-silva/subsets/',
-        '/datasets/vhr-silva/',
+        root / 'subsets',
+        root,
         use_segments=True,
     )
-    prepare_k_folds('/datasets/vhr-silva/')
+    prepare_k_folds(root)
+    generate_binary_segmentation(root)
