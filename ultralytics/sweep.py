@@ -13,17 +13,17 @@ def build_search_space():
     return {
         # Optimizer and LR schedule
         "lr0": tune.loguniform(1e-4, 5e-2),  # center near 0.01
-        "lrf": tune.loguniform(1e-3, 0.2),   # final LR ratio (default 0.01)
+        "lrf": tune.loguniform(1e-3, 0.2),  # final LR ratio (default 0.01)
         "momentum": tune.uniform(0.85, 0.99),
         "weight_decay": tune.loguniform(1e-6, 5e-3),
         "warmup_epochs": tune.uniform(0.0, 5.0),
         "warmup_momentum": tune.uniform(0.6, 0.95),
-    "warmup_bias_lr": tune.loguniform(1e-4, 3e-1),  # default 0.1
+        "warmup_bias_lr": tune.loguniform(1e-4, 3e-1),  # default 0.1
 
         # Loss gains
-        "box": tune.uniform(3.0, 10.0),   # default 7.5
-        "cls": tune.uniform(0.2, 2.0),    # default 0.5
-    "dfl": tune.uniform(0.5, 3.0),    # default 1.5
+        "box": tune.uniform(3.0, 10.0),  # default 7.5
+        "cls": tune.uniform(0.2, 2.0),  # default 0.5
+        "dfl": tune.uniform(0.5, 3.0),  # default 1.5
 
         # Color augs (fixed to args.yaml values to match working training)
         "hsv_h": tune.uniform(0.0, 0.05),
@@ -48,6 +48,7 @@ def build_search_space():
         "auto_augment": "randaugment",
         "copy_paste_mode": "flip",
     }
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='YOLO sweep script')
@@ -83,7 +84,7 @@ if __name__ == '__main__':
         data=f'/datasets/vhr-silva/forests-{split}_kfold_5.yaml',
         use_ray=True,
         space=space,
-        epochs=200,
+        epochs=300,
         project=name,
         wandb_project=name,
         name=name,
