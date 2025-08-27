@@ -16,7 +16,7 @@
 cd "$SLURM_TMPDIR" || exit 1
 cp -r "$HOME"/ultralytics/ ./
 cp -r "$HOME"/projects/def-phgig4/silva_vhr/yolo.sif ./
-cp -r "$HOME"/projects/def-phgig4/silva_vhr/vhr-silva.zip ./
+cp -r "$HOME"/projects/def-phgig4/silva_vhr/vhr-silva-yolo.zip ./vhr-silva.zip
 cp -r "$HOME"/projects/def-phgig4/silva_vhr/hg ./hg || mkdir hg
 cp -r "$HOME"/projects/def-phgig4/silva_vhr/*.pt ./ultralytics/
 
