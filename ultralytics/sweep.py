@@ -82,7 +82,7 @@ if __name__ == '__main__':
         data=f'/datasets/vhr-silva/forests-{split}_kfold_5.yaml',
         use_ray=True,
         space=space,
-        epochs=300,
+        epochs=150,
         project=name,
         wandb_project=name,
         name=name,
