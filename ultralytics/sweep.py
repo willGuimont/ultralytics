@@ -10,13 +10,12 @@ def build_search_space():
 
     return {
         # Optimizer and LR schedule
-        "lr0": tune.loguniform(1e-4, 5e-2),  # center near 0.01
-        "lrf": tune.loguniform(1e-3, 0.2),  # final LR ratio (default 0.01)
-        "momentum": tune.uniform(0.85, 0.99),
-        "weight_decay": tune.loguniform(1e-6, 5e-3),
+        "lr0": tune.uniform(1e-5, 1e-1),
+        "lrf": tune.uniform(0.01, 1.0),
+        "momentum": tune.uniform(0.6, 0.99),
+        "weight_decay": tune.uniform(0.0, 0.001),
         "warmup_epochs": tune.uniform(0.0, 5.0),
-        "warmup_momentum": tune.uniform(0.6, 0.95),
-        "warmup_bias_lr": tune.loguniform(1e-4, 3e-1),  # default 0.1
+        "warmup_momentum": tune.uniform(0.0, 0.95),
 
         # Loss gains
         "box": tune.uniform(3.0, 10.0),  # default 7.5
@@ -24,27 +23,25 @@ def build_search_space():
         "dfl": tune.uniform(0.5, 3.0),  # default 1.5
 
         # Color augs (fixed to args.yaml values to match working training)
-        "hsv_h": tune.uniform(0.0, 0.05),
-        "hsv_s": tune.uniform(0.3, 0.9),
-        "hsv_v": tune.uniform(0.2, 0.8),
+        "hsv_h": tune.uniform(0.0, 0.1),  # image HSV-Hue augmentation (fraction)
+        "hsv_s": tune.uniform(0.0, 0.9),  # image HSV-Saturation augmentation (fraction)
+        "hsv_v": tune.uniform(0.0, 0.9),  # image HSV-Value augmentation (fraction)
 
-        # Geometric augs (fixed to args.yaml values)
-        "translate": tune.uniform(0.0, 0.3),
-        "scale": tune.uniform(0.2, 0.8),
-        "fliplr": 0.5,
+        # Do not modify, otherwise some augmentations might crash
         "mosaic": 1.0,
 
-        # Keep disabled augmentations OFF (fixed constants from defaults)
-        "degrees": 0.0,
-        "shear": 0.0,
-        "perspective": 0.0,
-        "flipud": 0.0,
-        "mixup": 0.0,
-        "cutmix": 0.0,
-        "copy_paste": 0.0,
-        "bgr": 0.0,
-        "auto_augment": "randaugment",
-        "copy_paste_mode": "flip",
+        # Geometric augs (fixed to args.yaml values)
+        "degrees": tune.uniform(0.0, 45.0),  # image rotation (+/- deg)
+        "translate": tune.uniform(0.0, 0.9),  # image translation (+/- fraction)
+        "scale": tune.uniform(0.0, 0.9),  # image scale (+/- gain)
+        "shear": tune.uniform(0.0, 10.0),  # image shear (+/- deg)
+        "perspective": tune.uniform(0.0, 0.001),  # image perspective (+/- fraction), range 0-0.001
+        "flipud": tune.uniform(0.0, 1.0),  # image flip up-down (probability)
+        "fliplr": tune.uniform(0.0, 1.0),  # image flip left-right (probability)
+        "bgr": tune.uniform(0.0, 1.0),  # image channel BGR (probability)
+        "mixup": tune.uniform(0.0, 1.0),  # image mixup (probability)
+        "cutmix": tune.uniform(0.0, 1.0),  # image cutmix (probability)
+        "copy_paste": tune.uniform(0.0, 1.0),  # segment copy-paste (probability)
     }
 
 
@@ -70,14 +67,12 @@ if __name__ == '__main__':
         raise ValueError(f'Invalid model {model_version}')
 
     model = YOLO(pt)
-
-    # Ray Tune search space honoring disabled augs
     space = build_search_space()
 
     # Base tuning kwargs
-    name = f'640-yolo{model_version}{size}-sweep-split-{split}'
+    name = f'yolo{model_version}{size}-sweep-split-{split}'
     tune_kwargs = dict(
-        # imgsz=[1456, 1092],
+        imgsz=[1456, 1092],
         iterations=iterations,
         data=f'/datasets/vhr-silva/forests-{split}_kfold_5.yaml',
         use_ray=True,
@@ -93,10 +88,10 @@ if __name__ == '__main__':
     if size == 'x':
         tune_kwargs['batch'] = 1
 
-    # if split == 16:
-    #     tune_kwargs['imgsz'] = [728, 546]
-    # elif split == 32:
-    #     tune_kwargs['imgsz'] = [364, 273]
+    if split == 16:
+        tune_kwargs['imgsz'] = [728, 546]
+    elif split == 32:
+        tune_kwargs['imgsz'] = [364, 273]
 
     result_grid = model.tune(**tune_kwargs)
     print(result_grid)
