@@ -1,12 +1,12 @@
 import ast
 import json
+import math
 import operator as op
 import shutil
 from collections import defaultdict
 from pathlib import Path
 
 import cv2
-import math
 import matplotlib.pyplot as plt
 import numpy as np
 import yaml
@@ -113,7 +113,7 @@ def convert_coco(
 
     for subset_path in sorted(d for d in Path(subsets_dir).resolve().iterdir() if d.is_dir()):
         subset_name = subset_path.name
-        subset_downsample = eval_expr(subset_name.split('-')[1])
+        subset_downsample = eval_expr(subset_name.split('-')[1].replace('_', '/'))
         # Import json
         for json_file in sorted(Path(subset_path).resolve().glob("split_*.json")):
             lname = f"{subset_name}_{json_file.stem}"
@@ -133,6 +133,9 @@ def convert_coco(
                 # NOTE: images appear downscaled
                 orig_h, orig_w = img["height"], img["width"]
                 h, w = orig_h / subset_downsample, orig_w / subset_downsample
+                # round to nearest multiple of 32
+                h, w = round(h / 32) * 32, round(w / 32) * 32
+
                 f_rel = img["file_name"]
 
                 bboxes = []
