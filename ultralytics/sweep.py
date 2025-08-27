@@ -53,11 +53,13 @@ if __name__ == '__main__':
     parser.add_argument('--iterations', type=int, default=100,
                         help='Number of hyperparameter tuning iterations (default: 100)')
     parser.add_argument('--split', type=int, default=8, help='Image downscaling')
+    parser.add_argument('--epochs', type=int, default=100, help='Training epochs')
     args = parser.parse_args()
     size = args.size
     model_version = args.model
     iterations = args.iterations
     split = args.split
+    epochs = args.epochs
 
     if model_version == 11:
         pt = f'yolo11{size}-seg.pt'
@@ -77,7 +79,7 @@ if __name__ == '__main__':
         data=f'/datasets/vhr-silva/forests-{split}_kfold_5.yaml',
         use_ray=True,
         space=space,
-        epochs=150,
+        epochs=epochs,
         project=name,
         wandb_project=name,
         name=name,
