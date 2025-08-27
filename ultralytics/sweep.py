@@ -6,8 +6,6 @@ from ultralytics import YOLO
 
 
 def build_search_space():
-    """Build a Ray Tune search space inspired by default args, keeping disabled augs fixed at 0.0."""
-    # Import locally to avoid hard dependency when not using Ray
     from ray import tune
 
     return {
@@ -77,9 +75,9 @@ if __name__ == '__main__':
     space = build_search_space()
 
     # Base tuning kwargs
-    name = f'yolo{model_version}{size}-sweep-split-{split}'
+    name = f'640-yolo{model_version}{size}-sweep-split-{split}'
     tune_kwargs = dict(
-        imgsz=[1456, 1092],
+        # imgsz=[1456, 1092],
         iterations=iterations,
         data=f'/datasets/vhr-silva/forests-{split}_kfold_5.yaml',
         use_ray=True,
@@ -95,10 +93,10 @@ if __name__ == '__main__':
     if size == 'x':
         tune_kwargs['batch'] = 1
 
-    if split == 16:
-        tune_kwargs['imgsz'] = [728, 546]
-    elif split == 32:
-        tune_kwargs['imgsz'] = [364, 273]
+    # if split == 16:
+    #     tune_kwargs['imgsz'] = [728, 546]
+    # elif split == 32:
+    #     tune_kwargs['imgsz'] = [364, 273]
 
     result_grid = model.tune(**tune_kwargs)
     print(result_grid)
