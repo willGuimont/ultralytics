@@ -54,6 +54,7 @@ if __name__ == '__main__':
                         help='Number of hyperparameter tuning iterations (default: 100)')
     parser.add_argument('--split', type=int, default=8, help='Image downscaling')
     parser.add_argument('--epochs', type=int, default=100, help='Training epochs')
+
     args = parser.parse_args()
     size = args.size
     model_version = args.model
