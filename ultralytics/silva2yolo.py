@@ -1,9 +1,12 @@
+import ast
 import json
+import operator as op
 import shutil
 from collections import defaultdict
 from pathlib import Path
 
 import cv2
+import math
 import matplotlib.pyplot as plt
 import numpy as np
 import yaml
@@ -14,6 +17,40 @@ from ultralytics.data.utils import polygon2mask
 from ultralytics.utils import LOGGER
 from ultralytics.utils import TQDM
 from ultralytics.utils.plotting import colors
+
+operators = {
+    ast.Add: op.add,
+    ast.Sub: op.sub,
+    ast.Mult: op.mul,
+    ast.Div: op.truediv,
+    ast.Pow: op.pow,
+    ast.BitXor: op.xor,
+    ast.USub: op.neg,
+}
+
+functions = {
+    "sqrt": math.sqrt,
+}
+
+
+def eval_expr(expr):
+    return eval_(ast.parse(expr, mode='eval').body)
+
+
+def eval_(node):
+    match node:
+        case ast.Constant(value) if isinstance(value, (int, float)):
+            return value
+        case ast.BinOp(left, op_node, right):
+            return operators[type(op_node)](eval_(left), eval_(right))
+        case ast.UnaryOp(op_node, operand):
+            return operators[type(op_node)](eval_(operand))
+        case ast.Call(func, args, keywords) if isinstance(func, ast.Name):
+            if func.id in functions and not keywords:  # allow only whitelisted functions
+                return functions[func.id](*(eval_(arg) for arg in args))
+            raise TypeError(f"Unsupported function: {func.id}")
+        case _:
+            raise TypeError(node)
 
 
 def ann_to_contours(ann, orig_w: int, orig_h: int):
@@ -76,6 +113,7 @@ def convert_coco(
 
     for subset_path in sorted(d for d in Path(subsets_dir).resolve().iterdir() if d.is_dir()):
         subset_name = subset_path.name
+        subset_downsample = eval_expr(subset_name.split('-')[1])
         # Import json
         for json_file in sorted(Path(subset_path).resolve().glob("split_*.json")):
             lname = f"{subset_name}_{json_file.stem}"
@@ -92,9 +130,9 @@ def convert_coco(
             image_txt = []
             for img_id, anns in TQDM(annotations.items(), desc=f"Annotations {json_file}"):
                 img = images[f"{img_id:d}"]
-                # NOTE: images appear downscaled by 8 (existing code divides by 8). Preserve behavior.
+                # NOTE: images appear downscaled
                 orig_h, orig_w = img["height"], img["width"]
-                h, w = orig_h / 8, orig_w / 8
+                h, w = orig_h / subset_downsample, orig_w / subset_downsample
                 f_rel = img["file_name"]
 
                 bboxes = []
