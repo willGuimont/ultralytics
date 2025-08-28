@@ -133,11 +133,7 @@ def convert_coco(
                 img = images[f"{img_id:d}"]
                 # NOTE: images appear downscaled
                 orig_h, orig_w = img["height"], img["width"]
-                h, w = orig_h / subset_downsample, orig_w / subset_downsample
-                # round to nearest multiple of 4
-                if subset_downsample not in [8, 16, 32]:
-                    logging.warning("Rounding to the nearest multiple of 4")
-                    h, w = round(h / 4) * 4, round(w / 4) * 4
+                h, w = orig_h // subset_downsample, orig_w // subset_downsample
 
                 f_rel = img["file_name"]
 
