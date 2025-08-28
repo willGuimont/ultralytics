@@ -99,8 +99,8 @@ def ann_to_contours(ann, orig_w: int, orig_h: int):
 
 
 def convert_coco(
-        subsets_dir: Path = "../coco/annotations/",
-        save_dir: Path = "coco_converted/",
+        subsets_dir: Path,
+        save_dir: Path,
         use_segments: bool = False,
         use_keypoints: bool = False,
         filetype: str = 'tif-8',
@@ -198,7 +198,7 @@ def convert_coco(
                             # Associate with most recent bbox instance(s)
                             keypoints.append([cls] + bboxes[-instance_count + i][1:] + kps)
 
-                img_path = Path(f_rel.replace('<filetype>', filetype))
+                img_path = Path(f_rel)
                 image_out = save_dir / "images" / f"{subset_name}_{json_file.stem}"
                 image_out.mkdir(parents=True, exist_ok=True)
                 # Copy corresponding image (adjust tif -> tif-8 path as before)
@@ -303,13 +303,13 @@ def gen_kfold_yaml(json_path, out_path, kfold_name, cats=None):
         yaml.dump(output, f)
 
 
-def prepare_k_folds(root):
-    root = Path(root)
-    subsets = set(f.name.split('_')[0] for f in (root / "labels").iterdir() if f.is_dir())
+def prepare_k_folds(root, export_root):
+    export_root = Path(export_root)
+    subsets = set(f.name.split('_')[0] for f in (export_root / "labels").iterdir() if f.is_dir())
 
     for subset in subsets:
-        image_folder = root / 'images'
-        label_folder = root / 'labels'
+        image_folder = export_root / 'images'
+        label_folder = export_root / 'labels'
         splits = sorted(
             [name for f in label_folder.iterdir() if f.is_dir() and (name := f.name).startswith(f'{subset}_split_')])
         n_splits = len(splits)
@@ -322,7 +322,7 @@ def prepare_k_folds(root):
             train_splits = [splits[si] for si in split_indices - {test_idx, val_idx}]
 
             kfold_name = f"{subset}_kfold_{k_fold_idx + 1}"
-            gen_kfold_yaml(root / "subsets" / subset / f"split_1.json", (root / kfold_name).with_suffix('.yaml'),
+            gen_kfold_yaml(root / "subsets" / subset / f"split_1.json", (export_root / kfold_name).with_suffix('.yaml'),
                            kfold_name)
 
             kfold_splits = dict(train=train_splits, val=val_split, test=test_split)
@@ -377,10 +377,11 @@ def generate_binary_segmentation(root: Path):
 
 if __name__ == '__main__':
     root = Path('/datasets/vhr-silva/')
+    export_root = Path('/datasets/vhr-silva-yolo')
     convert_coco(
         root / 'subsets',
-        root,
+        export_root,
         use_segments=True,
     )
-    prepare_k_folds(root)
-    generate_binary_segmentation(root)
+    prepare_k_folds(root, export_root)
+    generate_binary_segmentation(export_root)
