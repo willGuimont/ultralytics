@@ -1,0 +1,261 @@
+{
+  "model": {
+    "value": "yolov12x-seg.pt"
+  },
+  "bgr": {
+    "value": 0.6242864406349802
+  },
+  "box": {
+    "value": 5.500329954771696
+  },
+  "cls": {
+    "value": 1.7504095361884977
+  },
+  "dfl": {
+    "value": 0.9796282218127004
+  },
+  "lr0": {
+    "value": 0.05551929815650404
+  },
+  "lrf": {
+    "value": 0.14890816459212966
+  },
+  "pid": {
+    "value": 2378959
+  },
+  "data": {
+    "value": "/datasets/vhr-silva/forests-16_kfold_5.yaml"
+  },
+  "date": {
+    "value": "2025-08-28_01-38-27"
+  },
+  "save": {
+    "value": false
+  },
+  "batch": {
+    "value": 1
+  },
+  "hsv_h": {
+    "value": 0.03884752673303228
+  },
+  "hsv_s": {
+    "value": 0.6323724159275466
+  },
+  "hsv_v": {
+    "value": 0.5667814029397785
+  },
+  "imgsz": {
+    "value": [
+      728,
+      546
+    ]
+  },
+  "mixup": {
+    "value": 0.28125587048880174
+  },
+  "scale": {
+    "value": 0.4357517917249379
+  },
+  "shear": {
+    "value": 9.149200721964956
+  },
+  "_wandb": {
+    "value": {
+      "e": {
+        "bxa508kwgzaegtohmwmd9znmgr5yoz9j": {
+          "os": "Linux-6.9.7-200.fc40.x86_64-x86_64-with-glibc2.35",
+          "gpu": "NVIDIA RTX A6000",
+          "args": [
+            "--node-ip-address=132.203.26.231",
+            "--node-manager-port=32989",
+            "--object-store-name=/tmp/ray/session_2025-08-27_12-05-06_672587_2101684/sockets/plasma_store",
+            "--raylet-name=/tmp/ray/session_2025-08-27_12-05-06_672587_2101684/sockets/raylet",
+            "--redis-address=None",
+            "--metrics-agent-port=58959",
+            "--logging-rotate-bytes=536870912",
+            "--logging-rotate-backup-count=5",
+            "--runtime-env-agent-port=53647",
+            "--gcs-address=132.203.26.231:45349",
+            "--session-name=session_2025-08-27_12-05-06_672587_2101684",
+            "--temp-dir=/tmp/ray",
+            "--webui=",
+            "--cluster-id=041bfa4dc8e075d50592529fb11d234244126f78a5ee28c03ff52204",
+            "--startup-token=281",
+            "--worker-launch-time-ms=1756357706852",
+            "--node-id=e24e705a8fa0708d6cb4cff9e964a40c33140fd4dd76fc955b0b2870",
+            "--runtime-env-hash=1320199963",
+            "--enable-resource-isolation=false"
+          ],
+          "disk": {
+            "/": {
+              "used": "16384",
+              "total": "67108864"
+            }
+          },
+          "host": "mamba-server",
+          "root": "/tmp/ray/session_2025-08-27_12-05-06_672587_2101684/artifacts/2025-08-27_12-05-13/yolo12x-sweep-split-166/driver_artifacts/_tune_9d5ee_00090",
+          "email": "william.guimont-martin.1@ulaval.ca",
+          "slurm": {
+            "conf": "/etc/slurm/slurm.conf",
+            "gtids": "0",
+            "jobid": "1986",
+            "job_id": "1986",
+            "nnodes": "1",
+            "nodeid": "0",
+            "procid": "0",
+            "job_gid": "1002",
+            "job_qos": "normal",
+            "job_uid": "1002",
+            "localid": "0",
+            "job_gpus": "2",
+            "job_name": "yolo-12-x-split-16",
+            "job_user": "wigum",
+            "nodelist": "mamba-server",
+            "task_pid": "2101659",
+            "submit_dir": "/home/wigum",
+            "job_account": "norlab",
+            "submit_host": "mamba-server",
+            "cluster_name": "cluster",
+            "cpus_on_node": "16",
+            "gpus_on_node": "1",
+            "job_end_time": "1756569900",
+            "job_nodelist": "mamba-server",
+            "prio_process": "0",
+            "cpus_per_task": "16",
+            "job_num_nodes": "1",
+            "job_partition": "debug",
+            "oom_kill_step": "0",
+            "topology_addr": "mamba-server",
+            "tres_per_task": "cpu=16",
+            "job_start_time": "1756310700",
+            "tasks_per_node": "1",
+            "job_cpus_per_node": "16",
+            "topology_addr_pattern": "node"
+          },
+          "memory": {
+            "total": "270100758528"
+          },
+          "python": "CPython 3.11.13",
+          "program": "/home/wigum/ultralytics/venv/lib/python3.11/site-packages/ray/_private/workers/default_worker.py",
+          "writerId": "bxa508kwgzaegtohmwmd9znmgr5yoz9j",
+          "cpu_count": 32,
+          "gpu_count": 4,
+          "startedAt": "2025-08-28T05:08:29.172184Z",
+          "executable": "/home/wigum/ultralytics/venv/bin/python",
+          "gpu_nvidia": [
+            {
+              "name": "NVIDIA RTX A6000",
+              "uuid": "GPU-ccd44a53-0549-78bf-0c8e-23eeec3d8407",
+              "cudaCores": 10752,
+              "memoryTotal": "51527024640",
+              "architecture": "Ampere"
+            },
+            {
+              "name": "NVIDIA RTX A6000",
+              "uuid": "GPU-ef1f535c-7085-5943-3a47-c442cc828f70",
+              "cudaCores": 10752,
+              "memoryTotal": "51527024640",
+              "architecture": "Ampere"
+            },
+            {
+              "name": "NVIDIA RTX A6000",
+              "uuid": "GPU-8f49c0fa-ead8-d58e-759e-bc948400eecc",
+              "cudaCores": 10752,
+              "memoryTotal": "51527024640",
+              "architecture": "Ampere"
+            },
+            {
+              "name": "NVIDIA RTX A6000",
+              "uuid": "GPU-088c2285-4ba5-bea4-6461-7200bbda2d9a",
+              "cudaCores": 10752,
+              "memoryTotal": "51527024640",
+              "architecture": "Ampere"
+            }
+          ],
+          "cudaVersion": "12.4",
+          "cpu_count_logical": 64
+        }
+      },
+      "m": [],
+      "t": {
+        "1": [
+          30
+        ],
+        "2": [
+          30
+        ],
+        "3": [
+          2,
+          13,
+          14,
+          16,
+          19,
+          61
+        ],
+        "4": "3.11.13",
+        "5": "0.21.1",
+        "10": [
+          20
+        ],
+        "12": "0.21.1",
+        "13": "linux-x86_64"
+      },
+      "cli_version": "0.21.1",
+      "python_version": "3.11.13"
+    }
+  },
+  "cutmix": {
+    "value": 0.7589921162663236
+  },
+  "epochs": {
+    "value": 100
+  },
+  "fliplr": {
+    "value": 0.047441176592109224
+  },
+  "flipud": {
+    "value": 0.5116162938864441
+  },
+  "mosaic": {
+    "value": 1
+  },
+  "degrees": {
+    "value": 12.947003120852829
+  },
+  "node_ip": {
+    "value": "132.203.26.231"
+  },
+  "project": {
+    "value": "yolo12x-sweep-split-16"
+  },
+  "hostname": {
+    "value": "mamba-server"
+  },
+  "momentum": {
+    "value": 0.698896415951534
+  },
+  "trial_id": {
+    "value": "9d5ee_00090"
+  },
+  "translate": {
+    "value": 0.44350465626149416
+  },
+  "copy_paste": {
+    "value": 0.2675171795145239
+  },
+  "perspective": {
+    "value": 0.0004601125723184061
+  },
+  "weight_decay": {
+    "value": 0.000848654881433059
+  },
+  "warmup_epochs": {
+    "value": 3.6762286290800894
+  },
+  "trial_log_path": {
+    "value": "/tmp/ray/session_2025-08-27_12-05-06_672587_2101684/artifacts/2025-08-27_12-05-13/yolo12x-sweep-split-166/driver_artifacts/_tune_9d5ee_00090"
+  },
+  "warmup_momentum": {
+    "value": 0.15169151555250576
+  }
+}

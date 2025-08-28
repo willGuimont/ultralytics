@@ -1,0 +1,248 @@
+{
+  "model": {
+    "value": "yolo11s-seg.pt"
+  },
+  "bgr": {
+    "value": 0
+  },
+  "box": {
+    "value": 6.0395337270855265
+  },
+  "cls": {
+    "value": 0.9293083477879208
+  },
+  "dfl": {
+    "value": 2.8760941843150483
+  },
+  "lr0": {
+    "value": 0.011126016874344795
+  },
+  "lrf": {
+    "value": 0.004770814784128385
+  },
+  "pid": {
+    "value": 3024180
+  },
+  "data": {
+    "value": "/datasets/vhr-silva/forests-8_kfold_5.yaml"
+  },
+  "date": {
+    "value": "2025-08-25_11-42-37"
+  },
+  "hsv_h": {
+    "value": 0.019338930700393848
+  },
+  "hsv_s": {
+    "value": 0.5990791881873418
+  },
+  "hsv_v": {
+    "value": 0.3990110087483795
+  },
+  "imgsz": {
+    "value": [
+      1456,
+      1092
+    ]
+  },
+  "mixup": {
+    "value": 0
+  },
+  "scale": {
+    "value": 0.5690891938011977
+  },
+  "shear": {
+    "value": 0
+  },
+  "_wandb": {
+    "value": {
+      "e": {
+        "12axyz5rlsn2rqdh96frz840vqp6sfbk": {
+          "os": "Linux-4.18.0-513.24.1.el8_9.x86_64-x86_64-with-glibc2.35",
+          "gpu": "NVIDIA A100 80GB PCIe",
+          "args": [
+            "--node-ip-address=10.250.200.92",
+            "--node-manager-port=36449",
+            "--object-store-name=/tmp/ray/session_2025-08-25_09-54-56_878290_2998846/sockets/plasma_store",
+            "--raylet-name=/tmp/ray/session_2025-08-25_09-54-56_878290_2998846/sockets/raylet",
+            "--redis-address=None",
+            "--metrics-agent-port=64345",
+            "--logging-rotate-bytes=536870912",
+            "--logging-rotate-backup-count=5",
+            "--runtime-env-agent-port=53308",
+            "--gcs-address=10.250.200.92:65227",
+            "--session-name=session_2025-08-25_09-54-56_878290_2998846",
+            "--temp-dir=/tmp/ray",
+            "--webui=",
+            "--cluster-id=0e9d992a747ed4bcf3b4257262dfb1f91acfa630dd7760afed87a9a7",
+            "--startup-token=71",
+            "--worker-launch-time-ms=1756133800441",
+            "--node-id=3eb5dc64c74232ae47c4d23366c411484cf787360aee7c59d0517206",
+            "--runtime-env-hash=1320199963",
+            "--enable-resource-isolation=false"
+          ],
+          "disk": {
+            "/": {
+              "used": "16384",
+              "total": "67108864"
+            }
+          },
+          "host": "ul-val-pr-cpc02.l.ul.ca",
+          "root": "/tmp/ray/session_2025-08-25_09-54-56_878290_2998846/artifacts/2025-08-25_09-55-02/yolo11s-sweep-split-8/driver_artifacts/_tune_190ed_00003",
+          "email": "william.guimont-martin.1@ulaval.ca",
+          "slurm": {
+            "conf": "/etc/slurm/slurm.conf",
+            "home": "/opt/software/slurm",
+            "gtids": "0",
+            "jobid": "1302233",
+            "job_id": "1302233",
+            "nnodes": "1",
+            "nodeid": "0",
+            "procid": "0",
+            "tmpdir": "/localscratch/wigum@ulaval.ca.1302233.0",
+            "job_gid": "855011835",
+            "job_qos": "normal",
+            "job_uid": "855011835",
+            "localid": "0",
+            "job_gpus": "1",
+            "job_name": "yolo-small-sweep",
+            "job_user": "wigum@ulaval.ca",
+            "mpi_type": "pmi2",
+            "nodelist": "ul-val-pr-cpc02",
+            "task_pid": "2998715",
+            "submit_dir": "/home/ulaval.ca/wigum",
+            "job_account": "def-phgig4",
+            "submit_host": "ul-val-pr-ssh01.l.ul.ca",
+            "cluster_name": "valeria",
+            "cpus_on_node": "16",
+            "gpus_on_node": "1",
+            "job_end_time": "1756475515",
+            "job_nodelist": "ul-val-pr-cpc02",
+            "mem_per_node": "65536",
+            "prio_process": "0",
+            "cpus_per_task": "16",
+            "job_num_nodes": "1",
+            "job_partition": "gpu_96h",
+            "restart_count": "0",
+            "topology_addr": "ul-val-pr-cpc02",
+            "tres_per_task": "cpu=16",
+            "job_start_time": "1756129915",
+            "tasks_per_node": "1",
+            "job_reservation": "C7_9369",
+            "job_cpus_per_node": "16",
+            "topology_addr_pattern": "node"
+          },
+          "memory": {
+            "total": "1081596588032"
+          },
+          "python": "CPython 3.11.13",
+          "program": "/localscratch/wigum@ulaval.ca.1302233.0/ultralytics/venv/lib/python3.11/site-packages/ray/_private/workers/default_worker.py",
+          "writerId": "12axyz5rlsn2rqdh96frz840vqp6sfbk",
+          "cpu_count": 64,
+          "gpu_count": 1,
+          "startedAt": "2025-08-25T14:56:43.631523Z",
+          "executable": "/localscratch/wigum@ulaval.ca.1302233.0/ultralytics/venv/bin/python",
+          "gpu_nvidia": [
+            {
+              "name": "NVIDIA A100 80GB PCIe",
+              "uuid": "GPU-163a990b-1e36-ac1e-dd16-1a48e52a3732",
+              "cudaCores": 6912,
+              "memoryTotal": "85899345920",
+              "architecture": "Ampere"
+            }
+          ],
+          "cudaVersion": "12.9",
+          "cpu_count_logical": 64
+        }
+      },
+      "m": [],
+      "t": {
+        "1": [
+          30
+        ],
+        "2": [
+          30
+        ],
+        "3": [
+          2,
+          13,
+          14,
+          16,
+          19,
+          61
+        ],
+        "4": "3.11.13",
+        "5": "0.21.1",
+        "10": [
+          20
+        ],
+        "12": "0.21.1",
+        "13": "linux-x86_64"
+      },
+      "cli_version": "0.21.1",
+      "python_version": "3.11.13"
+    }
+  },
+  "cutmix": {
+    "value": 0
+  },
+  "epochs": {
+    "value": 200
+  },
+  "fliplr": {
+    "value": 0.5
+  },
+  "flipud": {
+    "value": 0
+  },
+  "mosaic": {
+    "value": 1
+  },
+  "degrees": {
+    "value": 0
+  },
+  "node_ip": {
+    "value": "10.250.200.92"
+  },
+  "project": {
+    "value": "yolo11s-sweep-split-8"
+  },
+  "hostname": {
+    "value": "ul-val-pr-cpc02.l.ul.ca"
+  },
+  "momentum": {
+    "value": 0.8616107306163794
+  },
+  "trial_id": {
+    "value": "190ed_00003"
+  },
+  "translate": {
+    "value": 0.2233680946207843
+  },
+  "copy_paste": {
+    "value": 0
+  },
+  "perspective": {
+    "value": 0
+  },
+  "auto_augment": {
+    "value": "randaugment"
+  },
+  "weight_decay": {
+    "value": 0.00000681298199353127
+  },
+  "warmup_epochs": {
+    "value": 3.9626988605650055
+  },
+  "trial_log_path": {
+    "value": "/tmp/ray/session_2025-08-25_09-54-56_878290_2998846/artifacts/2025-08-25_09-55-02/yolo11s-sweep-split-8/driver_artifacts/_tune_190ed_00003"
+  },
+  "warmup_bias_lr": {
+    "value": 0.00038331548354626863
+  },
+  "copy_paste_mode": {
+    "value": "flip"
+  },
+  "warmup_momentum": {
+    "value": 0.9370840883372664
+  }
+}

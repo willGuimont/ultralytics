@@ -1,0 +1,212 @@
+{
+  "model": {
+    "value": "yolov12x-seg.pt"
+  },
+  "bgr": {
+    "value": 0
+  },
+  "box": {
+    "value": 4.981361482469218
+  },
+  "cls": {
+    "value": 1.4352361785217025
+  },
+  "dfl": {
+    "value": 1.803586686340234
+  },
+  "lr0": {
+    "value": 0.00014601563874559425
+  },
+  "lrf": {
+    "value": 0.06746389699865703
+  },
+  "pid": {
+    "value": 66396
+  },
+  "data": {
+    "value": "/datasets/vhr-silva/forests-32_kfold_5.yaml"
+  },
+  "date": {
+    "value": "2025-08-26_16-03-23"
+  },
+  "save": {
+    "value": false
+  },
+  "batch": {
+    "value": 1
+  },
+  "hsv_h": {
+    "value": 0.009556187935234044
+  },
+  "hsv_s": {
+    "value": 0.3604996274682964
+  },
+  "hsv_v": {
+    "value": 0.6493602328613788
+  },
+  "imgsz": {
+    "value": [
+      364,
+      273
+    ]
+  },
+  "mixup": {
+    "value": 0
+  },
+  "scale": {
+    "value": 0.48551111610151304
+  },
+  "shear": {
+    "value": 0
+  },
+  "_wandb": {
+    "value": {
+      "e": {
+        "owzicrt5l87q5qk6b5sfcsuwh13jiyp0": {
+          "os": "Linux-6.14.0-28-generic-x86_64-with-glibc2.39",
+          "gpu": "NVIDIA GeForce RTX 4090",
+          "args": [
+            "--node-ip-address=132.203.193.179",
+            "--node-manager-port=42893",
+            "--object-store-name=/tmp/ray/session_2025-08-26_13-16-54_873903_39229/sockets/plasma_store",
+            "--raylet-name=/tmp/ray/session_2025-08-26_13-16-54_873903_39229/sockets/raylet",
+            "--redis-address=None",
+            "--metrics-agent-port=60744",
+            "--logging-rotate-bytes=536870912",
+            "--logging-rotate-backup-count=5",
+            "--runtime-env-agent-port=58944",
+            "--gcs-address=132.203.193.179:58797",
+            "--session-name=session_2025-08-26_13-16-54_873903_39229",
+            "--temp-dir=/tmp/ray",
+            "--webui=",
+            "--cluster-id=2a34b286520f81480698eb6c0aba9790a828c46c52c800444eefc6f3",
+            "--startup-token=105",
+            "--worker-launch-time-ms=1756236763937",
+            "--node-id=c50699ef6609ad6ccd8900bad599010febfb298d81227a2f95294c31",
+            "--runtime-env-hash=0",
+            "--enable-resource-isolation=false"
+          ],
+          "disk": {
+            "/": {
+              "used": "1869358747648",
+              "total": "2013991550976"
+            }
+          },
+          "host": "church",
+          "root": "/tmp/ray/session_2025-08-26_13-16-54_873903_39229/artifacts/2025-08-26_13-16-56/yolo12x-sweep-split-322/driver_artifacts/_tune_779b5_00032",
+          "email": "william.guimont-martin.1@ulaval.ca",
+          "memory": {
+            "total": "67116179456"
+          },
+          "python": "CPython 3.12.3",
+          "program": "/home/william/Documents/Programming/ultralytics/.venv/lib/python3.12/site-packages/ray/_private/workers/default_worker.py",
+          "writerId": "owzicrt5l87q5qk6b5sfcsuwh13jiyp0",
+          "cpu_count": 24,
+          "gpu_count": 1,
+          "startedAt": "2025-08-26T19:32:44.800129Z",
+          "executable": "/home/william/Documents/Programming/ultralytics/.venv/bin/python3",
+          "gpu_nvidia": [
+            {
+              "name": "NVIDIA GeForce RTX 4090",
+              "uuid": "GPU-47a021e6-9926-cbfd-7b41-e178e1b5dc28",
+              "cudaCores": 16384,
+              "memoryTotal": "25757220864",
+              "architecture": "Ada"
+            }
+          ],
+          "cudaVersion": "12.8",
+          "cpu_count_logical": 32
+        }
+      },
+      "m": [],
+      "t": {
+        "1": [
+          30
+        ],
+        "2": [
+          30
+        ],
+        "3": [
+          2,
+          13,
+          14,
+          16,
+          19,
+          61
+        ],
+        "4": "3.12.3",
+        "5": "0.21.1",
+        "10": [
+          20
+        ],
+        "12": "0.21.1",
+        "13": "linux-x86_64"
+      },
+      "cli_version": "0.21.1",
+      "python_version": "3.12.3"
+    }
+  },
+  "cutmix": {
+    "value": 0
+  },
+  "epochs": {
+    "value": 300
+  },
+  "fliplr": {
+    "value": 0.5
+  },
+  "flipud": {
+    "value": 0
+  },
+  "mosaic": {
+    "value": 1
+  },
+  "degrees": {
+    "value": 0
+  },
+  "node_ip": {
+    "value": "132.203.193.179"
+  },
+  "project": {
+    "value": "yolo12x-sweep-split-32"
+  },
+  "hostname": {
+    "value": "church"
+  },
+  "momentum": {
+    "value": 0.9017476580002804
+  },
+  "trial_id": {
+    "value": "779b5_00032"
+  },
+  "translate": {
+    "value": 0.12288833508118376
+  },
+  "copy_paste": {
+    "value": 0
+  },
+  "perspective": {
+    "value": 0
+  },
+  "auto_augment": {
+    "value": "randaugment"
+  },
+  "weight_decay": {
+    "value": 0.00007444469335601206
+  },
+  "warmup_epochs": {
+    "value": 4.383844761477346
+  },
+  "trial_log_path": {
+    "value": "/tmp/ray/session_2025-08-26_13-16-54_873903_39229/artifacts/2025-08-26_13-16-56/yolo12x-sweep-split-322/driver_artifacts/_tune_779b5_00032"
+  },
+  "warmup_bias_lr": {
+    "value": 0.034699017512416545
+  },
+  "copy_paste_mode": {
+    "value": "flip"
+  },
+  "warmup_momentum": {
+    "value": 0.6340501996525358
+  }
+}
