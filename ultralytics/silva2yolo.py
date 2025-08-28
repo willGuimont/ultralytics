@@ -3,6 +3,7 @@ import json
 import logging
 import math
 import operator as op
+import re
 import shutil
 from collections import defaultdict
 from pathlib import Path
@@ -114,7 +115,8 @@ def convert_coco(
 
     for subset_path in sorted(d for d in Path(subsets_dir).resolve().iterdir() if d.is_dir()):
         subset_name = subset_path.name
-        subset_downsample = eval_expr(subset_name.split('-')[1].replace('_', '/'))
+        # division `/` is encoded as _, but we remove the `1/` as `forests-8` means `divided by 8`
+        subset_downsample = eval_expr(subset_name.split('-')[1].replace('_', '/').replace('1/', ''))
         # Import json
         for json_file in sorted(Path(subset_path).resolve().glob("split_*.json")):
             lname = f"{subset_name}_{json_file.stem}"
@@ -247,12 +249,12 @@ def parse_yolov8_seg_txt(label_path):
     return class_ids, segments_norm
 
 
-def gen_yaml(path, outpath):
-    with open(path, 'r') as f:
+def gen_yaml(json_path, outpath, dataset_path):
+    with open(json_path, 'r') as f:
         data = json.load(f)
     cats = data['categories']
     output = dict(
-        path='vhr-silva',
+        path=dataset_path,
         train='images/split_1',
         val='images/split_2',
         # test='images/test',
@@ -287,13 +289,13 @@ def viz_masks(image_path, txt_path, id2label):
     plt.show()
 
 
-def gen_kfold_yaml(json_path, out_path, kfold_name, cats=None):
+def gen_kfold_yaml(json_path, out_path, kfold_name, dataset_path, cats=None):
     if cats is None:
         with open(json_path, 'r') as f:
             data = json.load(f)
         cats = data['categories']
     output = dict(
-        path='vhr-silva',
+        path=dataset_path,
         train=f'images/{kfold_name}_train',
         val=f'images/{kfold_name}_val',
         test=f'images/{kfold_name}_test',
@@ -305,7 +307,8 @@ def gen_kfold_yaml(json_path, out_path, kfold_name, cats=None):
 
 def prepare_k_folds(root, export_root):
     export_root = Path(export_root)
-    subsets = set(f.name.split('_')[0] for f in (export_root / "labels").iterdir() if f.is_dir())
+    regex = r"([a-z0-9-\(\)\*_]*)_split_[0-9]"
+    subsets = set(re.search(regex, f.name)[1] for f in (export_root / "labels").iterdir() if f.is_dir())
 
     for subset in subsets:
         image_folder = export_root / 'images'
@@ -322,8 +325,10 @@ def prepare_k_folds(root, export_root):
             train_splits = [splits[si] for si in split_indices - {test_idx, val_idx}]
 
             kfold_name = f"{subset}_kfold_{k_fold_idx + 1}"
-            gen_kfold_yaml(root / "subsets" / subset / f"split_1.json", (export_root / kfold_name).with_suffix('.yaml'),
-                           kfold_name)
+            json_path = root / "subsets" / subset / f"split_1.json"
+            yaml_export_path = (export_root / kfold_name).with_suffix('.yaml')
+            dataset_path = export_root.name
+            gen_kfold_yaml(json_path, yaml_export_path, kfold_name, dataset_path)
 
             kfold_splits = dict(train=train_splits, val=val_split, test=test_split)
             for mode, splits_in_kfold in kfold_splits.items():
@@ -359,8 +364,9 @@ def generate_binary_segmentation(root: Path):
         shutil.copytree(label_folder, to_lab)
 
         name_no_mode = '_'.join(new_name.split('_')[:-1])
-        gen_kfold_yaml(root, (root / name_no_mode).with_suffix('.yaml'),
-                       name_no_mode, cats=[dict(id=0, name='Tree')])
+        yaml_export_path = (root / name_no_mode).with_suffix('.yaml')
+        dataset_path = export_root.name
+        gen_kfold_yaml(None, yaml_export_path, name_no_mode, dataset_path, cats=[dict(id=0, name='Tree')])
 
         labels = sorted(f for f in to_lab.iterdir() if f.is_file() and f.suffix == '.txt')
         for label in labels:
