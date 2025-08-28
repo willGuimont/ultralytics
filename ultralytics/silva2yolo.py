@@ -384,10 +384,10 @@ def generate_binary_segmentation(root: Path):
 if __name__ == '__main__':
     root = Path('/datasets/vhr-silva/')
     export_root = Path('/datasets/vhr-silva-yolo')
-    convert_coco(
-        root / 'subsets',
-        export_root,
-        use_segments=True,
-    )
+    # convert_coco(
+    #     root / 'subsets',
+    #     export_root,
+    #     use_segments=True,
+    # )
     prepare_k_folds(root, export_root)
-    generate_binary_segmentation(export_root)
+    # generate_binary_segmentation(export_root)

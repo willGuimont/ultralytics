@@ -32,6 +32,6 @@ module load httpproxy
 cd ultralytics || exit 1
 export WANDB_MODE=online
 export PYTHONPATH=.
-apptainer exec --nv --bind "$SLURM_TMPDIR"/vhr-silva:/datasets/vhr-silva --bind "$SLURM_TMPDIR"/hg:/hg --env "WANDB_MODE=online" ../yolo.sif \
+apptainer exec --nv --bind "$SLURM_TMPDIR"/vhr-silva-yolo:/datasets/vhr-silva-yolo --bind "$SLURM_TMPDIR"/hg:/hg --env "WANDB_MODE=online" ../yolo.sif \
   bash -c "python3 -m venv venv; source venv/bin/activate; pip install -e '.[dev]'; pip install -r requirements.txt; PYTHONPATH=. python ultralytics/train.py --data=/datasets/vhr-silva-yolo/$FOLD --hp configs/$CONFIG --outdir $HOME/projects/def-phgig4/silva_vhr/yolo_runs"
 
