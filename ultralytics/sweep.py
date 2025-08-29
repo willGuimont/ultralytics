@@ -75,7 +75,7 @@ if __name__ == '__main__':
     # Base tuning kwargs
     name = f'yolo{model_version}{size}-sweep-split-{split}'
     tune_kwargs = dict(
-        imgsz=[1456, 1092],
+        imgsz=[1092, 1456],
         iterations=iterations,
         data=f'/datasets/vhr-silva/forests-{split}_kfold_5.yaml',
         use_ray=True,
@@ -92,9 +92,9 @@ if __name__ == '__main__':
         tune_kwargs['batch'] = 1
 
     if split == 16:
-        tune_kwargs['imgsz'] = [728, 546]
+        tune_kwargs['imgsz'] = [546, 728]
     elif split == 32:
-        tune_kwargs['imgsz'] = [364, 273]
+        tune_kwargs['imgsz'] = [273, 364]
 
     result_grid = model.tune(**tune_kwargs)
     print(result_grid)
