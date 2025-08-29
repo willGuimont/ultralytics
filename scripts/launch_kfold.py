@@ -27,4 +27,4 @@ if __name__ == '__main__':
         folds = splits_per_size[split]
         # FOLD, CONFIG
         for fold in folds:
-            print(f'sjm run valeria scripts/train_valeria.sh FOLD={fold.name} CONFIG={config.name}')
+            print(f'sjm run mamba scripts/train_mamba.sh FOLD={fold.name} CONFIG={config.name}')

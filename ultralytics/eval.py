@@ -4,6 +4,9 @@ import re
 from collections import defaultdict
 from pathlib import Path
 
+import cv2
+# Added plotting imports
+import matplotlib.pyplot as plt
 import numpy as np
 import pycocotools.mask as mask_utils
 import torch
@@ -12,18 +15,16 @@ from torchmetrics.detection import MeanAveragePrecision
 
 from ultralytics import YOLO
 
-# Added plotting imports
-import matplotlib.pyplot as plt
-import cv2
-
 STREAM = False
-RETINA_MASK = False
+RETINA_MASK = True
 CONF = 0.25
 IOU = 0.7
 TTAUGMENT = False
 # Enable class-agnostic NMS (useful if class overlap is common)
-AGNOSTIC_NMS = False
+AGNOSTIC_NMS = True
+
 SMALL_SIZE = False
+REVERSE_IMGSZ = True
 
 RUN_NAME_REGEX = re.compile(r'[a-z0-9.-]*\.json_([a-z-0-9]*)_kfold_([0-9])\.yaml')
 
@@ -41,7 +42,8 @@ def overlay_masks(base_img, masks_tensor, alpha=0.4, seed=0):
     h, w = out.shape[:2]
     for i, mask in enumerate(m):
         if mask.shape != (h, w):  # skip size mismatch
-            logging.warning("Could not overlay mask, size missmatch")
+            logging.warning(f'Could not overlay mask, size miss match (mask={mask.shape} != {(h, w)}=img')
+            exit(1)
             continue
         color = rng.integers(0, 255, size=3, dtype=np.uint8)
         color_mask = np.zeros_like(out)
@@ -50,18 +52,24 @@ def overlay_masks(base_img, masks_tensor, alpha=0.4, seed=0):
     return out
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Generate evaluation information")
-    parser.add_argument('--run-path', required=True, help='Path to result folder')
-    # New plotting args
-    parser.add_argument('--plot-first', action='store_true', help='Plot first image pred vs gt')
-    parser.add_argument('--plot-first-path', default='first_pred_gt.png', help='Output path for first plot')
-    args = parser.parse_args()
+def remove_padding(masks, imgsz):
+    # See Letterbox.__call__ for values
+    top, bottom = 8, -8
+    left, right = None, None
+    masks = masks[:, top:bottom, left:right]
+    masks = [cv2.resize(mask.cpu().numpy().data.squeeze(), imgsz[::-1], interpolation=cv2.INTER_NEAREST) for mask in
+             masks]
+    return masks
 
+
+def compute_map(run_path):
     if SMALL_SIZE:
         logging.warning('PUT SMALL_SIZE TO False FOR REAL EVAL')
 
-    run_path = Path(args.run_path)
+    if REVERSE_IMGSZ:
+        logging.warning('imgsz is reversed!')
+
+    run_path = Path(run_path)
     args_path = run_path / 'args.yaml'
     weights_path = run_path / 'weights'
     run_name = run_path.name
@@ -72,7 +80,7 @@ def main():
         args = yaml.safe_load(f)
 
     model = weights_path / 'best.pt'
-    imgsz = 640 if SMALL_SIZE else args['imgsz']
+    imgsz = 640 if SMALL_SIZE else args['imgsz'][::-1]
     split_path = Path(f'/datasets/vhr-silva/subsets/{split_num}/split_{kfold_index}.json')
 
     with open(split_path, 'r') as f:
@@ -89,9 +97,9 @@ def main():
     targets = []
     for idx, img in enumerate(sorted(data['images'], key=lambda d: d['id'])):
         res = model(img['file_name'], imgsz=imgsz, device='cuda', stream=STREAM, retina_masks=RETINA_MASK, conf=CONF,
-                    iou=IOU, augment=TTAUGMENT, agnostic_nms=AGNOSTIC_NMS)[0]
-        masks = [] if res.masks is None else res.masks
-        masks = [m.data for m in masks]
+                    iou=IOU, augment=TTAUGMENT, agnostic_nms=AGNOSTIC_NMS, verbose=False)[0]
+        masks = [] if res.masks is None else remove_padding(res.masks, imgsz)
+        masks = [torch.tensor(m).unsqueeze(0) for m in masks]
         masks = torch.vstack(masks) if len(masks) > 0 else torch.tensor([])
         preds.append(dict(
             masks=masks.to(torch.uint8).cpu(),
@@ -118,22 +126,36 @@ def main():
                 rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
                 pred_overlay = overlay_masks(rgb, preds[-1]['masks'])
                 gt_overlay = overlay_masks(rgb, targets[-1]['masks'], seed=42)
-                fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-                axes[0].imshow(rgb); axes[0].set_title('Image'); axes[0].axis('off')
-                axes[1].imshow(gt_overlay); axes[1].set_title('GT Masks'); axes[1].axis('off')
-                axes[2].imshow(pred_overlay); axes[2].set_title('Pred Masks'); axes[2].axis('off')
+                fig, axes = plt.subplots(1, 2, figsize=(15, 5))
+                axes[0].imshow(gt_overlay)
+                axes[0].set_title('GT Masks')
+                axes[0].axis('off')
+                axes[1].imshow(pred_overlay)
+                axes[1].set_title('Pred Masks')
+                axes[1].axis('off')
                 fig.tight_layout()
                 fig.show()
                 plt.close(fig)
 
-    metric = MeanAveragePrecision(iou_type='segm')
-    metric.update(preds, targets)
-    metrics = metric.compute()
+    output = dict()
 
-    print('Segmentation mAP metrics:')
-    for k, v in metrics.items():
-        print(f"{k}: {v}")
+    map = MeanAveragePrecision(iou_type='segm')
+    map.update(preds, targets)
+    metrics = map.compute()
+    output['map'] = metrics
+
+    return output
 
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser(description="Generate evaluation information")
+    parser.add_argument('--run-path', required=True, help='Path to result folder')
+    args = parser.parse_args()
+
+    metrics = compute_map(args.run_path)
+
+    for metric_name, metric in metrics.items():
+        print('-' * 20)
+        print(metric_name)
+        for k, v in metric.items():
+            print(f"{k}: {v}")
