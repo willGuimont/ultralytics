@@ -177,3 +177,5 @@ calibration_*.npy
 scripts/yolo
 yolo11*-sweep*
 yolo12*-sweep*
+yolo_runs
+*.sif
