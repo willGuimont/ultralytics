@@ -91,6 +91,7 @@ class DetectionValidator(BaseValidator):
         )  # is COCO
         self.is_lvis = isinstance(val, str) and "lvis" in val and not self.is_coco  # is LVIS
         self.class_map = converter.coco80_to_coco91_class() if self.is_coco else list(range(1, len(model.names) + 1))
+        self.class_map = list(range(0, len(model.names)))
         self.args.save_json |= self.args.val and (self.is_coco or self.is_lvis) and not self.training  # run final val
         self.names = model.names
         self.nc = len(model.names)
@@ -373,8 +374,15 @@ class DetectionValidator(BaseValidator):
                 with bounding box coordinates, confidence scores, and class predictions.
             pbatch (Dict[str, Any]): Batch dictionary containing 'imgsz', 'ori_shape', 'ratio_pad', and 'im_file'.
         """
+        import json
+        with open('/datasets/vhr-silva/subsets/forests-8/coco_data.json', 'r') as f:
+            data = json.load(f)
+        name_to_id = {Path(img['file_name']).stem: img['id'] for img in data['images']}
+
         stem = Path(pbatch["im_file"]).stem
         image_id = int(stem) if stem.isnumeric() else stem
+        if image_id in name_to_id:
+            image_id = name_to_id[image_id]
         box = ops.xyxy2xywh(predn["bboxes"])  # xywh
         box[:, :2] -= box[:, 2:] / 2  # xy center to top-left corner
         for b, s, c in zip(box.tolist(), predn["conf"].tolist(), predn["cls"].tolist()):

@@ -1,13 +1,16 @@
 import logging
+import copy
+import json
 import re
 from collections import defaultdict
 from pathlib import Path
 from typing import List, Dict
 
 from ultralytics.eval import compute_map
+from ultralytics.utils.metrics import SegmentMetrics
+from faster_coco_eval import COCO, COCOeval_faster
 
 RUN_NAME_REGEX = re.compile(r'([a-z0-9.-]*)\.json_([a-z-0-9]*)_kfold_([0-9])\.yaml')
-
 
 def average_dict(dicts: List[Dict]):
     num = len(dicts)
@@ -22,12 +25,33 @@ def average_dict(dicts: List[Dict]):
 
     return sum
 
+def yolo_res_to_result(result: SegmentMetrics):
+    seg = result.seg
+    return dict(
+        map=seg.map,
+        map_50=seg.map50,
+        map_75=seg.map75,
+        map_small=None,
+        map_medium=None,
+        map_large=None,
+        mar_1=seg.mr,
+        mar_10=None,
+        mar_100=None,
+        mar_small=None,
+        mar_medium=None,
+        mar_large=None,
+        map_per_class=seg.maps,
+        mar_100_per_class=None,
+        classes=result.names,
+        speed=result.speed,
+    )
 
 if __name__ == '__main__':
     logging.disable()
 
-    root = Path('/datasets/yolo_runs2')
+    root = Path('/home/wigum/ultralytics/yolo_runs3')
     all_folds = sorted(f for f in root.iterdir() if f.is_dir())[::-1]
+    output_path = Path('results/')
 
     grouped_by_model_folds = defaultdict(list)
     for fold in all_folds:
@@ -35,15 +59,51 @@ if __name__ == '__main__':
         model, split, kfold = res[1], res[2], res[3]
         grouped_by_model_folds[(model, split)].append(fold)
 
-    for k, v in grouped_by_model_folds.items():
-        assert len(v) == 5, f'Error for {k}, has {len(v)} != 5'
-
-    for (model, split), paths in grouped_by_model_folds.items():
-        folds = [compute_map(path) for path in paths]
+    for i, ((model, split), paths) in enumerate(grouped_by_model_folds.items()):
+        folds = [compute_map(path) for path in sorted(paths)[:1]]
         if any(f is None for f in folds):
             print(f'Could not compute for ({model, split})')
             continue
-        avg_metric = average_dict(list(f['map'] for f in folds))
-        print('-' * 20)
-        print(model, split)
-        print(avg_metric)
+        
+        for i, pred_coco_json in enumerate(folds):
+            ann_file = f'/datasets/vhr-silva/subsets/{split}/split_{i+1}.json'
+
+            # with open(ann_file, 'r') as f:
+            #     data = json.load(f)
+            # id_to_name = {img['id']: Path(img['file_name']).stem for img in data['images']}
+            # new_images = []
+            # for img in data['images']:
+            #     nimg = copy.deepcopy(img)
+            #     nimg['id'] = id_to_name[nimg['id']]
+            #     new_images.append(nimg)
+            # data['images'] = new_images
+            # new_anns = []
+            # for ann in data['annotations']:
+            #     nann = copy.deepcopy(ann)
+            #     nann['image_id'] = id_to_name[nann['image_id']]
+            #     new_anns.append(nann)
+            # data['annotations'] = new_anns
+            # new_ann_file = Path(f'/datasets/vhr-silva-newid/subsets/{split}/split_{i+1}.json')
+            # new_ann_file.parent.mkdir(parents=True, exist_ok=True)
+            # with open(new_ann_file, 'w') as f:
+            #     json.dump(data, f)
+
+
+            coco_gt = COCO(COCO.load_json(ann_file))
+            coco_dt = coco_gt.loadRes(COCO.load_json(pred_coco_json))
+            coco_eval = COCOeval_faster(coco_gt, coco_dt, 'segm', extra_calc=True)
+            coco_eval.evaluate()
+            coco_eval.accumulate()
+            coco_eval.summarize()
+            
+
+        # out = output_path / model
+        # out.mkdir(parents=True, exist_ok=True)
+        #     with open(out / f'split_{i}.json', 'w') as f:
+        #         obj = yolo_res_to_result(fold)
+        #         json.dump(obj, f)
+        
+        # avg_metric = average_dict(list(f['map'] for f in folds))
+        # print('-' * 20)
+        # print(model, split)
+        # print(avg_metric)

@@ -1,5 +1,6 @@
 wandb
 pycocotools
+faster_coco_eval
 albumentations
 ray[tune]
 torchmetrics

@@ -178,4 +178,8 @@ scripts/yolo
 yolo11*-sweep*
 yolo12*-sweep*
 yolo_runs
+yolo_runs2
+yolo_runs3
+json_out/
+results/
 *.sif

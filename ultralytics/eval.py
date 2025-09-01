@@ -3,6 +3,7 @@ import logging
 import re
 from collections import defaultdict
 from pathlib import Path
+import shutil
 
 import cv2
 # Added plotting imports
@@ -86,7 +87,7 @@ def compute_map(run_path):
         logging.warning(f'Using hardcoded value for imgsz: {HARDCODED_IMGSZ}')
         imgsz = HARDCODED_IMGSZ
 
-    split_path = Path(f'/datasets/vhr-silva/subsets/{split_num}/split_{kfold_index}.json')
+    split_path = Path(f'/data/vhr-silva/subsets/{split_num}/split_{kfold_index}.json')
 
     with open(split_path, 'r') as f:
         data = yaml.safe_load(f)
@@ -98,64 +99,70 @@ def compute_map(run_path):
         return None
     model.eval()
 
-    model.val(data=args['data'], split='test')
+    print(args['data'])
+    save_path = Path('json_out') / run_path.stem / 'predictions.json'
+    save_path.parent.mkdir(parents=True, exist_ok=True)
+    results = model.val(data=args['data'].replace('/datasets/', '/data/'), split='test', save_json=True)
+    shutil.copy(Path(results.save_dir) / 'predictions.json', save_path)
+    return save_path
+    # print(results)
 
-    anns_per_img = defaultdict(list)
-    for ann in data['annotations']:
-        anns_per_img[ann['image_id']].append(ann)
+    # anns_per_img = defaultdict(list)
+    # for ann in data['annotations']:
+    #     anns_per_img[ann['image_id']].append(ann)
 
-    preds = []
-    targets = []
-    for idx, img in enumerate(sorted(data['images'], key=lambda d: d['id'])):
-        res = model(img['file_name'], imgsz=imgsz, device='cuda', stream=STREAM, retina_masks=RETINA_MASK, conf=CONF,
-                    iou=IOU, augment=TTAUGMENT, agnostic_nms=AGNOSTIC_NMS, verbose=False)[0]
-        masks = [] if res.masks is None else remove_padding(res.masks, imgsz)
-        masks = [torch.tensor(m).unsqueeze(0) for m in masks]
-        masks = torch.vstack(masks) if len(masks) > 0 else torch.tensor([])
-        preds.append(dict(
-            masks=masks.to(torch.uint8).cpu(),
-            scores=res.boxes.conf.cpu(),
-            labels=res.boxes.cls.detach().clone().cpu().to(torch.uint8),
-            speed=res.speed
-        ))
+    # preds = []
+    # targets = []
+    # for idx, img in enumerate(sorted(data['images'], key=lambda d: d['id'])):
+    #     res = model(img['file_name'], imgsz=imgsz, device='cuda', stream=STREAM, retina_masks=RETINA_MASK, conf=CONF,
+    #                 iou=IOU, augment=TTAUGMENT, agnostic_nms=AGNOSTIC_NMS, verbose=False)[0]
+    #     masks = [] if res.masks is None else remove_padding(res.masks, imgsz)
+    #     masks = [torch.tensor(m).unsqueeze(0) for m in masks]
+    #     masks = torch.vstack(masks) if len(masks) > 0 else torch.tensor([])
+    #     preds.append(dict(
+    #         masks=masks.to(torch.uint8).cpu(),
+    #         scores=res.boxes.conf.cpu(),
+    #         labels=res.boxes.cls.detach().clone().cpu().to(torch.uint8),
+    #         speed=res.speed
+    #     ))
 
-        anns = anns_per_img[img['id']]
-        masks = [mask_utils.decode(ann['segmentation']) for ann in anns]
-        labels = [ann['category_id'] for ann in anns]
-        targets.append(dict(
-            masks=torch.tensor(np.array(masks)),
-            labels=torch.tensor(labels, dtype=torch.long)
-        ))
+    #     anns = anns_per_img[img['id']]
+    #     masks = [mask_utils.decode(ann['segmentation']) for ann in anns]
+    #     labels = [ann['category_id'] for ann in anns]
+    #     targets.append(dict(
+    #         masks=torch.tensor(np.array(masks)),
+    #         labels=torch.tensor(labels, dtype=torch.long)
+    #     ))
 
-        # Plot first sample
-        if idx == 0:
-            # Load image (BGR), convert to RGB for matplotlib
-            bgr = cv2.imread(img['file_name'])
-            if bgr is None:
-                logging.warning('Could not read first image for plotting.')
-            else:
-                rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
-                pred_overlay = overlay_masks(rgb, preds[-1]['masks'])
-                gt_overlay = overlay_masks(rgb, targets[-1]['masks'], seed=42)
-                fig, axes = plt.subplots(1, 2, figsize=(15, 5))
-                axes[0].imshow(gt_overlay)
-                axes[0].set_title('GT Masks')
-                axes[0].axis('off')
-                axes[1].imshow(pred_overlay)
-                axes[1].set_title('Pred Masks')
-                axes[1].axis('off')
-                fig.tight_layout()
-                fig.show()
-                plt.close(fig)
+    #     # Plot first sample
+    #     if idx == 0:
+    #         # Load image (BGR), convert to RGB for matplotlib
+    #         bgr = cv2.imread(img['file_name'])
+    #         if bgr is None:
+    #             logging.warning('Could not read first image for plotting.')
+    #         else:
+    #             rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
+    #             pred_overlay = overlay_masks(rgb, preds[-1]['masks'])
+    #             gt_overlay = overlay_masks(rgb, targets[-1]['masks'], seed=42)
+    #             fig, axes = plt.subplots(1, 2, figsize=(15, 5))
+    #             axes[0].imshow(gt_overlay)
+    #             axes[0].set_title('GT Masks')
+    #             axes[0].axis('off')
+    #             axes[1].imshow(pred_overlay)
+    #             axes[1].set_title('Pred Masks')
+    #             axes[1].axis('off')
+    #             fig.tight_layout()
+    #             fig.show()
+    #             plt.close(fig)
 
-    output = dict()
+    # output = dict()
 
-    map = MeanAveragePrecision(iou_type='segm')
-    map.update(preds, targets)
-    metrics = map.compute()
-    output['map'] = metrics
+    # map = MeanAveragePrecision(iou_type='segm')
+    # map.update(preds, targets)
+    # metrics = map.compute()
+    # output['map'] = metrics
 
-    return output
+    # return output
 
 
 if __name__ == '__main__':
