@@ -102,7 +102,7 @@ def compute_map(run_path):
     print(args['data'])
     save_path = Path('json_out') / run_path.stem / 'predictions.json'
     save_path.parent.mkdir(parents=True, exist_ok=True)
-    results = model.val(data=args['data'].replace('/datasets/', '/data/'), split='test', save_json=True)
+    results = model.val(data=args['data'].replace('/datasets/', '/data/'), split='test', save_json=True, imgsz=imgsz)
     shutil.copy(Path(results.save_dir) / 'predictions.json', save_path)
     return save_path
     # print(results)

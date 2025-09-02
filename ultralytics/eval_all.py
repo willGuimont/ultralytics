@@ -40,6 +40,7 @@ if __name__ == '__main__':
         grouped_by_model_folds[(model, split)].append(fold)
 
     for i, ((model, split), paths) in enumerate(grouped_by_model_folds.items()):
+        print(f'Running {model, split}...')
         folds = [compute_map(path) for path in sorted(paths)]
         if any(f is None for f in folds):
             print(f'Could not compute for ({model, split})')
