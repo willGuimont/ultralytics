@@ -6,7 +6,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import List, Dict
 
-from ultralytics.eval import compute_map
+from ultralytics.eval import compute_map, compute_speed
 from ultralytics.utils.metrics import SegmentMetrics
 from faster_coco_eval import COCO, COCOeval_faster
 
@@ -29,7 +29,7 @@ def average_dict(dicts: List[Dict]):
 if __name__ == '__main__':
     logging.disable()
 
-    root = Path('/home/wigum/ultralytics/yolo_runs4')
+    root = Path('./yolo_runs4')
     all_folds = sorted(f for f in root.iterdir() if f.is_dir())[::-1]
     output_path = Path('results/')
 
@@ -40,35 +40,24 @@ if __name__ == '__main__':
         grouped_by_model_folds[(model, split)].append(fold)
 
     for i, ((model, split), paths) in enumerate(grouped_by_model_folds.items()):
-        print(f'Running {model, split}...')
+        print(f'Evaluating {model} on {split}...')
+        speeds = [compute_speed(path) for path in sorted(paths)]
+
+        for i, (time_s, n_img) in enumerate(speeds):
+            out = output_path / model
+            out.mkdir(parents=True, exist_ok=True)
+            obj = dict(time_s=time_s, n_img=n_img)
+            with open(out / f'split_{i}_speed.json', 'w') as f:
+                json.dump(obj, f)
+        continue
+
         folds = [compute_map(path) for path in sorted(paths)]
         if any(f is None for f in folds):
             print(f'Could not compute for ({model, split})')
             continue
-        
+
         for i, pred_coco_json in enumerate(folds):
             ann_file = f'/datasets/vhr-silva/subsets/{split}/split_{i+1}.json'
-
-            # with open(ann_file, 'r') as f:
-            #     data = json.load(f)
-            # id_to_name = {img['id']: Path(img['file_name']).stem for img in data['images']}
-            # new_images = []
-            # for img in data['images']:
-            #     nimg = copy.deepcopy(img)
-            #     nimg['id'] = id_to_name[nimg['id']]
-            #     new_images.append(nimg)
-            # data['images'] = new_images
-            # new_anns = []
-            # for ann in data['annotations']:
-            #     nann = copy.deepcopy(ann)
-            #     nann['image_id'] = id_to_name[nann['image_id']]
-            #     new_anns.append(nann)
-            # data['annotations'] = new_anns
-            # new_ann_file = Path(f'/datasets/vhr-silva-newid/subsets/{split}/split_{i+1}.json')
-            # new_ann_file.parent.mkdir(parents=True, exist_ok=True)
-            # with open(new_ann_file, 'w') as f:
-            #     json.dump(data, f)
-
 
             coco_gt = COCO(COCO.load_json(ann_file))
             coco_dt = coco_gt.loadRes(COCO.load_json(pred_coco_json))
@@ -82,8 +71,3 @@ if __name__ == '__main__':
             with open(out / f'split_{i}.json', 'w') as f:
                 obj = coco_eval.stats_as_dict
                 json.dump(obj, f)
-        
-        # avg_metric = average_dict(list(f['map'] for f in folds))
-        # print('-' * 20)
-        # print(model, split)
-        # print(avg_metric)

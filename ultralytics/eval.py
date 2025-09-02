@@ -1,20 +1,19 @@
 import argparse
+import itertools
 import logging
 import re
-from collections import defaultdict
-from pathlib import Path
 import shutil
+import time
+from pathlib import Path
 
 import cv2
-# Added plotting imports
-import matplotlib.pyplot as plt
 import numpy as np
-import pycocotools.mask as mask_utils
 import torch
 import yaml
-from torchmetrics.detection import MeanAveragePrecision
+from torch.utils.data import DataLoader
 
 from ultralytics import YOLO
+from ultralytics.dataloader import SilvaDataloader
 
 STREAM = False
 RETINA_MASK = True
@@ -27,6 +26,7 @@ AGNOSTIC_NMS = False
 SMALL_SIZE = False
 REVERSE_IMGSZ = True
 HARDCODED_IMGSZ = (1092, 1456)
+EVAL_SPEED = True
 
 RUN_NAME_REGEX = re.compile(r'[a-z0-9.-]*\.json_([a-z-0-9]*)_kfold_([0-9])\.yaml')
 
@@ -62,6 +62,42 @@ def remove_padding(masks, imgsz):
              masks]
     return masks
 
+def compute_speed(run_path):
+    run_path = Path(run_path)
+    weights_path = run_path / 'weights'
+
+    model = weights_path / 'best.pt'
+
+    try:
+        model = YOLO(model)
+    except FileNotFoundError:
+        print(f'Error loading {run_path}')
+        return None
+    model.eval()
+
+    def collate_fn(batch):
+        return batch
+
+    dataset = SilvaDataloader('/datasets/vhr-silva')
+    dataloader = DataLoader(dataset, batch_size=1, num_workers=8, pin_memory=True, collate_fn=collate_fn)
+
+    # Warmup
+    with torch.no_grad():
+        for batch in itertools.islice(dataloader, 5):
+            _ = model(batch, half=True)
+
+    torch.cuda.synchronize()
+    with torch.no_grad():
+        t0 = time.perf_counter()
+        for batch in dataloader:
+            _ = model(batch, half=True)
+        torch.cuda.synchronize()
+        duration = time.perf_counter() - t0
+
+    n_img = len(dataloader)
+    print(f'Took {duration}s for {n_img} images')
+    return duration, n_img
+
 
 def compute_map(run_path):
     if SMALL_SIZE:
@@ -87,7 +123,7 @@ def compute_map(run_path):
         logging.warning(f'Using hardcoded value for imgsz: {HARDCODED_IMGSZ}')
         imgsz = HARDCODED_IMGSZ
 
-    split_path = Path(f'/data/vhr-silva/subsets/{split_num}/split_{kfold_index}.json')
+    split_path = Path(f'/datasets/vhr-silva/subsets/{split_num}/split_{kfold_index}.json')
 
     with open(split_path, 'r') as f:
         data = yaml.safe_load(f)
