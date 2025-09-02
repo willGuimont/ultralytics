@@ -19,7 +19,7 @@ from ultralytics import YOLO
 STREAM = False
 RETINA_MASK = True
 CONF = 0.25
-IOU = 0.5
+IOU = 0.7
 TTAUGMENT = False
 # Enable class-agnostic NMS (useful if class overlap is common)
 AGNOSTIC_NMS = False

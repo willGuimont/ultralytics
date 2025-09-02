@@ -25,31 +25,11 @@ def average_dict(dicts: List[Dict]):
 
     return sum
 
-def yolo_res_to_result(result: SegmentMetrics):
-    seg = result.seg
-    return dict(
-        map=seg.map,
-        map_50=seg.map50,
-        map_75=seg.map75,
-        map_small=None,
-        map_medium=None,
-        map_large=None,
-        mar_1=seg.mr,
-        mar_10=None,
-        mar_100=None,
-        mar_small=None,
-        mar_medium=None,
-        mar_large=None,
-        map_per_class=seg.maps,
-        mar_100_per_class=None,
-        classes=result.names,
-        speed=result.speed,
-    )
 
 if __name__ == '__main__':
     logging.disable()
 
-    root = Path('/home/wigum/ultralytics/yolo_runs3')
+    root = Path('/home/wigum/ultralytics/yolo_runs4')
     all_folds = sorted(f for f in root.iterdir() if f.is_dir())[::-1]
     output_path = Path('results/')
 
@@ -60,7 +40,7 @@ if __name__ == '__main__':
         grouped_by_model_folds[(model, split)].append(fold)
 
     for i, ((model, split), paths) in enumerate(grouped_by_model_folds.items()):
-        folds = [compute_map(path) for path in sorted(paths)[:1]]
+        folds = [compute_map(path) for path in sorted(paths)]
         if any(f is None for f in folds):
             print(f'Could not compute for ({model, split})')
             continue
@@ -95,13 +75,12 @@ if __name__ == '__main__':
             coco_eval.evaluate()
             coco_eval.accumulate()
             coco_eval.summarize()
-            
 
-        # out = output_path / model
-        # out.mkdir(parents=True, exist_ok=True)
-        #     with open(out / f'split_{i}.json', 'w') as f:
-        #         obj = yolo_res_to_result(fold)
-        #         json.dump(obj, f)
+            out = output_path / model
+            out.mkdir(parents=True, exist_ok=True)
+            with open(out / f'split_{i}.json', 'w') as f:
+                obj = coco_eval.stats_as_dict
+                json.dump(obj, f)
         
         # avg_metric = average_dict(list(f['map'] for f in folds))
         # print('-' * 20)

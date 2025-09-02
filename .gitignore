@@ -180,6 +180,7 @@ yolo12*-sweep*
 yolo_runs
 yolo_runs2
 yolo_runs3
+yolo_runs4
 json_out/
 results/
 *.sif
