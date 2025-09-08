@@ -79,6 +79,6 @@ if __name__ == '__main__':
 
             out = output_path / model
             out.mkdir(parents=True, exist_ok=True)
-            with open(out / f'split_{i}.json', 'w') as f:
-                obj = coco_eval.stats_as_dict
+            with open(out / f'split_{i}_metrics.json', 'w') as f:
+                obj = coco_eval.extended_metrics
                 json.dump(obj, f)
