@@ -4,13 +4,19 @@ import logging
 import re
 import shutil
 import time
+from collections import defaultdict
 from pathlib import Path
+import pycocotools.mask as mask_utils
+import matplotlib.pyplot as plt
 
 import cv2
 import numpy as np
 import torch
 import yaml
 from torch.utils.data import DataLoader
+from torchmetrics import Accuracy
+from torchmetrics.classification import MulticlassAccuracy, MulticlassF1Score
+from torchmetrics.detection import MeanAveragePrecision
 
 from ultralytics import YOLO
 from ultralytics.dataloader import SilvaDataloader
@@ -200,6 +206,105 @@ def compute_map(run_path):
 
     # return output
 
+
+def compute_metrics(run_path):
+    if SMALL_SIZE:
+        logging.warning('PUT SMALL_SIZE TO False FOR REAL EVAL')
+
+    if REVERSE_IMGSZ:
+        logging.warning('imgsz is reversed!')
+
+    run_path = Path(run_path)
+    args_path = run_path / 'args.yaml'
+    weights_path = run_path / 'weights'
+    run_name = run_path.name
+    res = re.search(RUN_NAME_REGEX, run_name)
+    split_num, kfold_index = res[1], res[2]
+
+    with open(args_path, 'r') as f:
+        args = yaml.safe_load(f)
+
+    model = weights_path / 'best.pt'
+
+    imgsz = 640 if SMALL_SIZE else args['imgsz'][::-1]
+    if HARDCODED_IMGSZ is not None:
+        logging.warning(f'Using hardcoded value for imgsz: {HARDCODED_IMGSZ}')
+        imgsz = HARDCODED_IMGSZ
+
+    split_path = Path(f'/datasets/vhr-silva/subsets/{split_num}/split_{kfold_index}.json')
+
+    with open(split_path, 'r') as f:
+        data = yaml.safe_load(f)
+
+    try:
+        model = YOLO(model)
+    except FileNotFoundError:
+        print(f'Error loading {run_path}')
+        return None
+    model.eval()
+
+    anns_per_img = defaultdict(list)
+    for ann in data['annotations']:
+        anns_per_img[ann['image_id']].append(ann)
+
+    preds = []
+    targets = []
+    for idx, img in enumerate(sorted(data['images'], key=lambda d: d['id'])):
+        res = model(img['file_name'], imgsz=imgsz, device='cuda', stream=STREAM, retina_masks=RETINA_MASK, conf=CONF,
+                    iou=IOU, augment=TTAUGMENT, agnostic_nms=AGNOSTIC_NMS, verbose=False)[0]
+        masks = [] if res.masks is None else remove_padding(res.masks, imgsz)
+        masks = [torch.tensor(m).unsqueeze(0) for m in masks]
+        masks = torch.vstack(masks) if len(masks) > 0 else torch.tensor([])
+        preds.append(dict(
+            masks=masks.to(torch.uint8).cpu(),
+            scores=res.boxes.conf.cpu(),
+            labels=res.boxes.cls.detach().clone().cpu().to(torch.uint8),
+            speed=res.speed
+        ))
+
+        anns = anns_per_img[img['id']]
+        masks = [mask_utils.decode(ann['segmentation']) for ann in anns]
+        labels = [ann['category_id'] for ann in anns]
+        targets.append(dict(
+            masks=torch.tensor(np.array(masks)),
+            labels=torch.tensor(labels, dtype=torch.long)
+        ))
+
+        # Plot first sample
+        if idx == 0:
+            # Load image (BGR), convert to RGB for matplotlib
+            bgr = cv2.imread(img['file_name'])
+            if bgr is None:
+                logging.warning('Could not read first image for plotting.')
+            else:
+                rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
+                pred_overlay = overlay_masks(rgb, preds[-1]['masks'])
+                gt_overlay = overlay_masks(rgb, targets[-1]['masks'], seed=42)
+                fig, axes = plt.subplots(1, 2, figsize=(15, 5))
+                axes[0].imshow(gt_overlay)
+                axes[0].set_title('GT Masks')
+                axes[0].axis('off')
+                axes[1].imshow(pred_overlay)
+                axes[1].set_title('Pred Masks')
+                axes[1].axis('off')
+                fig.tight_layout()
+                fig.show()
+                plt.close(fig)
+
+    map = MeanAveragePrecision(iou_type='segm')
+    acc_metric = MulticlassAccuracy(21)
+    f1s_metric = MulticlassF1Score(21)
+
+    map.update(preds, targets)
+    acc_metric.update(preds, targets)
+    f1s_metric.update(preds, targets)
+
+    output = {}
+    output['map'] = map.compute()
+    output['acc'] = acc_metric.compute()
+    output['f1'] = f1s_metric.compute()
+
+    return output
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Generate evaluation information")

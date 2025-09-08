@@ -6,7 +6,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import List, Dict
 
-from ultralytics.eval import compute_map, compute_speed
+from ultralytics.eval import compute_map, compute_speed, compute_metrics
 from ultralytics.utils.metrics import SegmentMetrics
 from faster_coco_eval import COCO, COCOeval_faster
 
@@ -41,15 +41,26 @@ if __name__ == '__main__':
 
     for i, ((model, split), paths) in enumerate(grouped_by_model_folds.items()):
         print(f'Evaluating {model} on {split}...')
-        speeds = [compute_speed(path) for path in sorted(paths)]
+        # speeds = [compute_speed(path) for path in sorted(paths)]
+        #
+        # for i, (time_s, n_img) in enumerate(speeds):
+        #     out = output_path / model
+        #     out.mkdir(parents=True, exist_ok=True)
+        #     obj = dict(time_s=time_s, n_img=n_img)
+        #     with open(out / f'split_{i}_speed.json', 'w') as f:
+        #         json.dump(obj, f)
+        # continue
 
-        for i, (time_s, n_img) in enumerate(speeds):
-            out = output_path / model
-            out.mkdir(parents=True, exist_ok=True)
-            obj = dict(time_s=time_s, n_img=n_img)
-            with open(out / f'split_{i}_speed.json', 'w') as f:
-                json.dump(obj, f)
-        continue
+        # folds = [compute_metrics(path) for path in sorted(paths)]
+        # if any(f is None for f in folds):
+        #     print(f'Could not compute for ({model, split})')
+        #     continue
+        # for i, obj in enumerate(folds):
+        #     out = output_path / model
+        #     out.mkdir(parents=True, exist_ok=True)
+        #     with open(out / f'split_{i}_metrics.json', 'w') as f:
+        #         json.dump(obj, f)
+        # continue
 
         folds = [compute_map(path) for path in sorted(paths)]
         if any(f is None for f in folds):
